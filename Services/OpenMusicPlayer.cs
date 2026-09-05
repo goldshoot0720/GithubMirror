@@ -27,35 +27,60 @@ public sealed partial class OpenMusicPlayer : IDisposable
     public static readonly OpenMusicTrack[] Tracks =
     [
         new(
-            "最瞎結婚理由",
-            "鋒兄鋒兄",
-            "https://www.openmusic.ai/tw/song/sEV2FkGLT3",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788497715045-ljzb8b-a440c9f59fa9f533.mp3"),
+            "鋒兄的傳奇人生",
+            "黃馨鋒",
+            "https://www.openmusic.ai/tw/song/7QFM8xkYlL",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544353204-35ptvr-400f323e2b57d62e.mp3"),
+        new(
+            "水電進化論",
+            "黃馨鋒",
+            "https://www.openmusic.ai/tw/song/JwYHPsrRr7",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544333098-26mgig-b6d582b2c05fdbc0.mp3"),
+        new(
+            "鋒塗力一起拚",
+            "黃阿不點",
+            "https://www.openmusic.ai/tw/song/p11bGIsK7Q",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544383306-6dlwj2-9e880c1bf08f16e5.mp3"),
         new(
             "排列組合的對話",
             "馮思敏",
             "https://www.openmusic.ai/tw/song/ocAHNKqKvZ",
             "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788550085354-asvrxa-650a77ea189075d3.mp3"),
         new(
-            "最瞎結婚理由（版本二）",
-            "鋒兄鋒兄",
-            "https://www.openmusic.ai/tw/song/McGbZAfJzo",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788497715005-16gyu3-a857a9a468b4fa52.mp3"),
+            "結婚理由",
+            "迪華敕擩",
+            "https://www.openmusic.ai/tw/song/NHc6u5KDVD",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788545437416-8npyyk-cb27d5895edaae49.mp3"),
         new(
-            "鋒兄的傳奇人生",
-            "黃馨鋒",
-            "https://www.openmusic.ai/tw/song/7QFM8xkYlL",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544353204-35ptvr-400f323e2b57d62e.mp3"),
+            "水電王子",
+            "鋒兄塗哥公關資訊鋒兄AI工作室塗哥建設",
+            "https://www.openmusic.ai/tw/song/4HqKPWjhmN",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544569486-tq3zxv-e385d231021f4ce4.mp3"),
         new(
-            "Departure-(142k)",
-            "鋒塗公司",
-            "https://www.openmusic.ai/tw/song/XtBJ3bljeH",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788582575783-zswid0-57bfa665373b36c8.mp3"),
+            "招財喵布布送祝福",
+            "鋒兄塗哥公關資訊鋒兄AI工作室塗哥建設",
+            "https://www.openmusic.ai/tw/song/ygPzygIV00",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544572151-1xe64q-e38c5d3879a5a2a8.mp3"),
         new(
-            "水電進化論",
-            "黃馨鋒",
-            "https://www.openmusic.ai/tw/song/JwYHPsrRr7",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544333098-26mgig-b6d582b2c05fdbc0.mp3")
+            "集中統一領導",
+            "feng feng",
+            "https://www.openmusic.ai/tw/song/5M5cPaj54t",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544499770-7v76wu-dc44f1fe9c7d6e86.mp3"),
+        new(
+            "鋒兄進化論",
+            "feng feng",
+            "https://www.openmusic.ai/tw/song/0l7SVUmMPR",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544482329-umlbvm-d3cb47faefec5f00.mp3"),
+        new(
+            "塗神水電王子",
+            "Hsin Feng Huang",
+            "https://www.openmusic.ai/tw/song/t0mtRi7uEZ",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544570634-3xq6vk-eebf1cba15d498d0.mp3"),
+        new(
+            "喵布布本喵掉的毛",
+            "Hsin Feng Huang",
+            "https://www.openmusic.ai/tw/song/sjMdsmLlAg",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544480124-6pvmqm-5da74ddb4f535dba.mp3")
     ];
 
     private static readonly HttpClient HttpClient = new()

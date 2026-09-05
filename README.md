@@ -22,7 +22,18 @@
   - Azure Repos
   
 - **任務追踪**: 實時監控鏡像任務進度和狀態
-- **鏡像背景音樂**: 可選六首 OpenMusic 歌曲，預設接續播放下一首（清單播完會從頭再來），也可改為單曲循環、手動切換、播放與暫停。包含〈最瞎結婚理由（版本二）〉：https://www.openmusic.ai/tw/song/McGbZAfJzo ，以及〈鋒兄的傳奇人生〉（黃馨鋒）：https://www.openmusic.ai/tw/song/7QFM8xkYlL ，〈Departure-(142k)〉（鋒塗公司）：https://www.openmusic.ai/tw/song/XtBJ3bljeH ，以及〈水電進化論〉（黃馨鋒）：https://www.openmusic.ai/tw/song/JwYHPsrRr7 。勾選「鏡像時自動播放」即可在開始複製時播放，完成或取消時停止；手動播放可獨立於鏡像工作持續播放。內建播放支援 Windows。
+- **鏡像背景音樂**: 可選十一首 OpenMusic 歌曲，預設接續播放下一首（清單播完會從頭再來），也可改為單曲循環、手動切換、播放與暫停。勾選「鏡像時自動播放」即可在開始複製時播放，完成或取消時停止；手動播放可獨立於鏡像工作持續播放。內建播放支援 Windows。曲目如下：
+  - 〈鋒兄的傳奇人生〉（黃馨鋒）：https://www.openmusic.ai/tw/song/7QFM8xkYlL
+  - 〈水電進化論〉（黃馨鋒）：https://www.openmusic.ai/tw/song/JwYHPsrRr7
+  - 〈鋒塗力一起拚〉（黃阿不點）：https://www.openmusic.ai/tw/song/p11bGIsK7Q
+  - 〈排列組合的對話〉（馮思敏）：https://www.openmusic.ai/tw/song/ocAHNKqKvZ
+  - 〈結婚理由〉（迪華敕擩）：https://www.openmusic.ai/tw/song/NHc6u5KDVD
+  - 〈水電王子〉（鋒兄塗哥公關資訊鋒兄AI工作室塗哥建設）：https://www.openmusic.ai/tw/song/4HqKPWjhmN
+  - 〈招財喵布布送祝福〉（鋒兄塗哥公關資訊鋒兄AI工作室塗哥建設）：https://www.openmusic.ai/tw/song/ygPzygIV00
+  - 〈集中統一領導〉（feng feng）：https://www.openmusic.ai/tw/song/5M5cPaj54t
+  - 〈鋒兄進化論〉（feng feng）：https://www.openmusic.ai/tw/song/0l7SVUmMPR
+  - 〈塗神水電王子〉（Hsin Feng Huang）：https://www.openmusic.ai/tw/song/t0mtRi7uEZ
+  - 〈喵布布本喵掉的毛〉（Hsin Feng Huang）：https://www.openmusic.ai/tw/song/sjMdsmLlAg
 - **內建使用教學**: 啟動時提供七步驟新手導覽，並可從主畫面隨時重新開啟
 - **設定檔 Google 雲端備份**: 主畫面右上角與右側都有專屬「備份設定檔」按鈕，可將帳號 Token 與應用程式設定加密上傳到 Google 雲端硬碟的「OAuth / GithubMirror」資料夾，換電腦後再還原
 
