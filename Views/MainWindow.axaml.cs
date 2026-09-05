@@ -1,11 +1,15 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using GithubMirror.Models;
 using GithubMirror.Services;
 using GithubMirror.ViewModels;
 
@@ -172,6 +176,33 @@ public partial class MainWindow : Window
             _musicPlayer.Stop();
             _ownsAutomaticPlayback = false;
         }
+    }
+
+    /// <summary>專案名稱的連結：點一下開啟該專案在來源平台上的頁面。</summary>
+    private void RepositoryLink_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not RepositoryInfo repository) return;
+
+        _viewModel.OpenRepositoryCommand.Execute(repository);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// 在專案列上點兩下也等於開啟專案頁面。已經自己會處理點擊的控制項
+    /// （名稱連結、勾選框）要跳過，否則一次雙擊會開兩個分頁。
+    /// </summary>
+    private void RepositoryRow_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is not Visual source) return;
+
+        var ancestors = source.GetSelfAndVisualAncestors().TakeWhile(v => v is not DataGridRow).ToList();
+        if (ancestors.Any(v => v is Button or CheckBox)) return;
+
+        var row = source.GetSelfAndVisualAncestors().OfType<DataGridRow>().FirstOrDefault();
+        if ((row?.DataContext ?? RepositoryGrid.SelectedItem) is not RepositoryInfo repository) return;
+
+        _viewModel.OpenRepositoryCommand.Execute(repository);
+        e.Handled = true;
     }
 
     private void ContinuePlaybackChanged(object? sender, RoutedEventArgs e)

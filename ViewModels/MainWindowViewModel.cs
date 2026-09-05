@@ -48,6 +48,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         GitHubPasteCommand = new RelayCommand(_ => GitHubSetupStep = 4, _ => !IsVerifying);
         StartWithPlatformCommand = new RelayCommand(p => StartWithPlatform(p as string));
         ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty, _ => HasSearchText);
+        OpenRepositoryCommand = new RelayCommand(
+            p => OpenRepository(p as RepositoryInfo),
+            p => p is RepositoryInfo repo && repo.HasWebUrl);
     }
 
     // =====================================================================
@@ -531,6 +534,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
         AddError = error;
     }
 
+    /// <summary>在系統預設瀏覽器開啟專案在來源平台上的頁面。</summary>
+    private void OpenRepository(RepositoryInfo? repository)
+    {
+        if (repository is null) return;
+
+        if (!repository.HasWebUrl)
+        {
+            SetStatus($"{repository.FullName} 沒有可開啟的網址。", isError: true);
+            return;
+        }
+
+        if (SystemBrowser.TryOpen(repository.WebUrl, out var error)) return;
+        SetStatus(error, isError: true);
+    }
+
     /// <summary>空狀態的捷徑：直接切到指定平台、打開新增面板與步驟說明。</summary>
     private void StartWithPlatform(string? platform)
     {
@@ -579,6 +597,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public RelayCommand OpenTokenPageCommand { get; }
     public RelayCommand StartWithPlatformCommand { get; }
     public RelayCommand ClearSearchCommand { get; }
+    public RelayCommand OpenRepositoryCommand { get; }
 
     // =====================================================================
     //  行為

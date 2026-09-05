@@ -54,6 +54,68 @@
             <Setter Property="Margin" Value="0,0,0,4" />
         </Style>
 
+        <!-- 專案名稱：看起來是連結、點了會用系統瀏覽器開啟專案頁面 -->
+        <Style Selector="Button.link">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Button.link:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Button.link:disabled">
+            <Setter Property="Cursor" Value="Arrow" />
+        </Style>
+
+        <Style Selector="Button.link TextBlock.link-text">
+            <Setter Property="Foreground" Value="{StaticResource AppAccent}" />
+        </Style>
+
+        <Style Selector="Button.link:pointerover TextBlock.link-text">
+            <Setter Property="Foreground" Value="{StaticResource AppAccentDark}" />
+            <Setter Property="TextDecorations" Value="Underline" />
+        </Style>
+
+        <!-- 沒有網址可開時就退回一般文字，避免誤導使用者去點 -->
+        <Style Selector="Button.link:disabled TextBlock.link-text">
+            <Setter Property="Foreground" Value="{StaticResource AppText}" />
+            <Setter Property="TextDecorations" Value="{x:Null}" />
+        </Style>
+
+        <Style Selector="Button.link PathIcon.link-icon">
+            <Setter Property="Foreground" Value="{StaticResource AppAccent}" />
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <Style Selector="Button.link:pointerover PathIcon.link-icon">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <Style Selector="Button.link:disabled PathIcon.link-icon">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
         <!-- 卡片 -->
         <Style Selector="Border.card">
             <Setter Property="Background" Value="{StaticResource AppSurface}" />

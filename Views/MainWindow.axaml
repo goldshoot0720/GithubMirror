@@ -461,11 +461,13 @@
 
                     <Grid>
                         <!-- 專案表格 -->
-                        <DataGrid ItemsSource="{Binding Repositories}"
+                        <DataGrid x:Name="RepositoryGrid"
+                                  ItemsSource="{Binding Repositories}"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
                                   CanUserSortColumns="True"
                                   HeadersVisibility="Column"
+                                  DoubleTapped="RepositoryRow_DoubleTapped"
                                   IsVisible="{Binding HasRepositories}">
                             <DataGrid.Columns>
 
@@ -487,8 +489,20 @@
                                                           Foreground="{Binding IsPrivate, Converter={StaticResource PrivacyBrush}}"
                                                           ToolTip.Tip="{Binding VisibilityDisplay}" />
                                                 <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                               TextTrimming="CharacterEllipsis" />
+                                                    <!-- 專案名稱是連結：點一下用系統瀏覽器開啟來源平台的專案頁面 -->
+                                                    <Button Classes="link"
+                                                            Click="RepositoryLink_Click"
+                                                            IsEnabled="{Binding HasWebUrl}"
+                                                            ToolTip.Tip="{Binding WebUrlTip}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                                            <TextBlock Classes="link-text" Text="{Binding Name}"
+                                                                       FontWeight="SemiBold"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                            <PathIcon Classes="link-icon" Width="10" Height="10"
+                                                                      VerticalAlignment="Center"
+                                                                      Data="{StaticResource IconExternal}" />
+                                                        </StackPanel>
+                                                    </Button>
                                                     <TextBlock Text="{Binding DescriptionDisplay}" Classes="caption"
                                                                TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>

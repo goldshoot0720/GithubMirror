@@ -65,6 +65,12 @@ public class RepositoryInfo : ObservableObject
 
     public string FullName => string.IsNullOrEmpty(Owner) ? Name : $"{Owner}/{Name}";
 
+    /// <summary>是否有可在瀏覽器開啟的專案頁面網址。</summary>
+    public bool HasWebUrl => !string.IsNullOrWhiteSpace(WebUrl);
+
+    /// <summary>清單上滑鼠停留時的提示：有網址就顯示網址，沒有就說明原因。</summary>
+    public string WebUrlTip => HasWebUrl ? $"在瀏覽器開啟：{WebUrl}" : "這個專案沒有可開啟的網址";
+
     public string SizeDisplay => FormatSize(SizeInBytes);
 
     public string VisibilityDisplay => IsPrivate ? "Private" : "Public";

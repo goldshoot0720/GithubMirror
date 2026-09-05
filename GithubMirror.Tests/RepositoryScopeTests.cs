@@ -88,6 +88,31 @@ public sealed class RepositoryScopeTests
     }
 
     [Fact]
+    public async Task Open_repository_command_needs_a_repository_with_a_web_url()
+    {
+        var vm = new MainWindowViewModel(AppServices.CreateSample());
+        vm.Accounts.Add(GitHubUser("goldshoot0720"));
+        await vm.RefreshAsync();
+
+        var repo = Assert.Single(vm.Repositories, r => r.Name == "web-portal");
+        Assert.True(repo.HasWebUrl);
+        Assert.Contains(repo.WebUrl, repo.WebUrlTip, StringComparison.Ordinal);
+        Assert.True(vm.OpenRepositoryCommand.CanExecute(repo));
+
+        Assert.False(vm.OpenRepositoryCommand.CanExecute(null));
+        Assert.False(vm.OpenRepositoryCommand.CanExecute("web-portal"));
+
+        var noUrl = new RepositoryInfo { Name = "no-url", Owner = "goldshoot0720" };
+        Assert.False(noUrl.HasWebUrl);
+        Assert.False(vm.OpenRepositoryCommand.CanExecute(noUrl));
+
+        // 走 Execute（雙擊列的路徑不看 CanExecute）時要留下錯誤訊息，而不是靜靜什麼都不做。
+        vm.OpenRepositoryCommand.Execute(noUrl);
+        Assert.True(vm.StatusIsError);
+        Assert.Contains("no-url", vm.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MatchesSearch_looks_at_name_owner_language_and_platform()
     {
         var repo = new RepositoryInfo
