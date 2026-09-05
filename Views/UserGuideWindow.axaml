@@ -64,7 +64,7 @@
                 <CheckBox x:Name="DoNotShowAgainCheck" Content="不再顯示教學視窗（啟動時）"
                           HorizontalAlignment="Center" />
                 <TextBlock Classes="caption" TextAlignment="Center" TextWrapping="Wrap"
-                           Text="仍可從右上角「使用教學」開啟；設定檔可用「備份設定檔」上傳到 Google 雲端硬碟。" />
+                           Text="仍可從右上角「使用教學」開啟；設定檔可用「備份設定檔」上傳到 Google 雲端硬碟的 OAuth/GithubMirror 資料夾。" />
                 <TextBlock x:Name="PreferenceErrorText" IsVisible="False" TextWrapping="Wrap"
                            Foreground="{StaticResource AppDanger}" />
             </StackPanel>

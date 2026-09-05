@@ -9,7 +9,7 @@
         <!-- 標題與提醒固定在最上方，捲動時不會被切掉 -->
         <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,14">
             <TextBlock Text="備份設定檔至 Google 雲端硬碟" Classes="h1" />
-            <TextBlock Text="只備份帳號 Token 與應用程式設定，不包含 Git 倉庫內容。上傳前會用備份密碼加密；忘記密碼就無法還原，請另行妥善保存。"
+            <TextBlock Text="只備份帳號 Token 與應用程式設定，不包含 Git 倉庫內容。加密後會放到 Google 雲端硬碟的「OAuth / GithubMirror」資料夾；忘記密碼就無法還原，請另行妥善保存。"
                        TextWrapping="Wrap" Classes="muted" />
         </StackPanel>
 
@@ -32,7 +32,9 @@
                         <TextBlock Text="2 · 加密並上傳設定檔" FontWeight="Bold" />
                         <TextBox x:Name="BackupPassword" PasswordChar="●" MaxLength="4" Watermark="新備份密碼（四位數字）" />
                         <TextBox x:Name="ConfirmPassword" PasswordChar="●" MaxLength="4" Watermark="再次輸入四位數字密碼" />
-                        <Button x:Name="UploadButton" Content="加密並上傳設定檔至 Google 雲端硬碟" Click="Upload_Click" IsEnabled="False" />
+                        <TextBlock Text="檔案會建立在「我的雲端硬碟 / OAuth / GithubMirror」。若資料夾尚不存在，第一次上傳時會自動建立。"
+                                   TextWrapping="Wrap" Classes="muted" />
+                        <Button x:Name="UploadButton" Content="加密並上傳至 OAuth/GithubMirror" Click="Upload_Click" IsEnabled="False" />
                     </StackPanel>
                 </Border>
                 <Border Classes="card" Padding="14">

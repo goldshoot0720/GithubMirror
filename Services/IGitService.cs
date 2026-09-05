@@ -39,12 +39,33 @@ public sealed class TargetRepository
     public bool WasCreated { get; init; }
 }
 
+/// <summary>要向平台索取哪些專案。預設只拿自己的，載入最快、API 呼叫最少。</summary>
+public enum RepositoryScope
+{
+    /// <summary>只有這個帳號自己擁有的專案。</summary>
+    OwnedOnly,
+
+    /// <summary>自己的 ＋ 被邀請為協作者的專案。</summary>
+    IncludingCollaborations,
+
+    /// <summary>自己的 ＋ 協作 ＋ 所屬組織底下所有看得到的專案。</summary>
+    Everything
+}
+
 public interface IGitService
 {
     string Platform { get; }
 
     /// <summary>驗證憑證是否可用，並盡量自動補齊使用者名稱（少一個欄位要填）。</summary>
     Task<ProbeResult> ProbeAsync(AccountCredential credential, CancellationToken ct);
+
+    /// <summary>
+    /// 依範圍列出 repository（含大小）。
+    /// 平台若還沒支援分範圍查詢，預設會退回舊的「一次全拿」行為。
+    /// </summary>
+    Task<IReadOnlyList<RepositoryInfo>> ListRepositoriesAsync(
+        AccountCredential credential, RepositoryScope scope, IProgress<string>? progress, CancellationToken ct)
+        => ListRepositoriesAsync(credential, progress, ct);
 
     /// <summary>列出這個帳號可存取的所有 repository（含大小）。</summary>
     Task<IReadOnlyList<RepositoryInfo>> ListRepositoriesAsync(

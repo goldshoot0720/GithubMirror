@@ -53,7 +53,7 @@ public partial class UserGuideWindow : Window
             "7",
             "備份設定檔到 Google 雲端硬碟",
             "主畫面右上角與右側都有專屬「備份設定檔」按鈕",
-            "按「備份設定檔」或右側「備份設定檔至 Google 雲端硬碟」，可把帳號 Token、鏡像名稱規則、音樂與教學偏好加密上傳到你的 Google 雲端硬碟。換電腦時用同一組 OAuth 設定檔與備份密碼即可還原；不會上傳 Git 倉庫內容。",
+            "按「備份設定檔」或右側「備份設定檔至 Google 雲端硬碟」，可把帳號 Token、鏡像名稱規則、音樂與教學偏好加密上傳到你的 Google 雲端硬碟「OAuth / GithubMirror」資料夾。換電腦時用同一組 OAuth 設定檔與備份密碼即可還原；不會上傳 Git 倉庫內容。",
             "首次使用需在 Google Cloud 啟用 Drive API，建立「桌面應用程式」OAuth 用戶端並下載 JSON。備份密碼為四位數字，忘記就無法還原。")
     ];
 

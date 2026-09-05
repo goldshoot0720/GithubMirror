@@ -442,14 +442,16 @@
                             </StackPanel>
                         </Grid>
                         <WrapPanel>
-                            <TextBlock Text="預設只顯示此帳號自己的專案" Classes="caption"
+                            <TextBlock Text="預設只讀取此帳號自己的專案" Classes="caption"
                                        VerticalAlignment="Center" Margin="0,0,16,4" />
                             <CheckBox IsChecked="{Binding IncludeCollaboratorRepos}"
-                                      Content="協作的專案" Margin="0,0,16,4"
-                                      ToolTip.Tip="其他使用者把你加進去的專案（擁有者不是此帳號）" />
+                                      IsEnabled="{Binding IsIdle}"
+                                      Content="加上協作專案" Margin="0,0,16,4"
+                                      ToolTip.Tip="其他使用者把你加進去的專案（擁有者不是此帳號）。勾選後會重新向平台讀取，需要多等一下。" />
                             <CheckBox IsChecked="{Binding IncludeAllAccessibleRepos}"
-                                      Content="所有可能專案" Margin="0,0,16,4"
-                                      ToolTip.Tip="Token 能存取的全部專案，包含組織／群組倉庫" />
+                                      IsEnabled="{Binding IsIdle}"
+                                      Content="加上組織專案" Margin="0,0,16,4"
+                                      ToolTip.Tip="Token 能存取的全部專案，包含組織／群組倉庫。數量可能是自己專案的好幾倍，讀取會明顯變慢。" />
                             <CheckBox IsChecked="{Binding ShowAllCommitSizes}"
                                       Content="所有提交的大小" Margin="0,0,0,4"
                                       ToolTip.Tip="預設顯示最近一次提交（目前檔案）的大小。勾選後改為全部 Git 歷史，含已刪除的檔案。GitHub／Gitea／Codeberg 可分開計算；其他平台只有倉庫總大小。" />
@@ -774,7 +776,7 @@
                                         <TextBlock Text="設定檔雲端備份" Classes="label" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <TextBlock Classes="caption" TextWrapping="Wrap"
-                                               Text="把帳號 Token、名稱規則、音樂與教學偏好加密上傳到 Google 雲端硬碟。不含 Git 倉庫內容。" />
+                                               Text="把帳號 Token、名稱規則、音樂與教學偏好加密上傳到 Google 雲端硬碟的「OAuth / GithubMirror」資料夾。不含 Git 倉庫內容。" />
                                     <Button Theme="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch"
                                             Click="ShowBackup_Click"
                                             ToolTip.Tip="開啟 Google 雲端硬碟備份與還原視窗">

@@ -142,15 +142,16 @@ public partial class BackupWindow : Window
         finally { BackupPassword.Text = ConfirmPassword.Text = string.Empty; }
         ct.ThrowIfCancellationRequested();
         var name = await _drive.UploadAsync(encrypted, ct);
-        StatusText.Text = $"已上傳：{name}。";
+        var location = $"{GoogleDriveBackupClient.BackupFolderPath}/{name}";
+        StatusText.Text = $"已上傳：{location}。";
         try
         {
             await RefreshFilesAsync(ct);
-            StatusText.Text = $"備份完成：{name}";
+            StatusText.Text = $"備份完成：{location}";
         }
         catch (Exception)
         {
-            StatusText.Text = $"備份已上傳：{name}；清單更新失敗，請稍後重新整理，無需再次上傳。";
+            StatusText.Text = $"備份已上傳：{location}；清單更新失敗，請稍後重新整理，無需再次上傳。";
         }
     });
 

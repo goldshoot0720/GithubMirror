@@ -108,14 +108,42 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public bool IncludeCollaboratorRepos
     {
         get => _includeCollaboratorRepos;
-        set { if (SetProperty(ref _includeCollaboratorRepos, value)) ApplyFilter(); }
+        set
+        {
+            if (!SetProperty(ref _includeCollaboratorRepos, value)) return;
+            ApplyFilter();
+            _ = ReloadForScopeChangeAsync();
+        }
     }
 
     private bool _includeAllAccessibleRepos;
     public bool IncludeAllAccessibleRepos
     {
         get => _includeAllAccessibleRepos;
-        set { if (SetProperty(ref _includeAllAccessibleRepos, value)) ApplyFilter(); }
+        set
+        {
+            if (!SetProperty(ref _includeAllAccessibleRepos, value)) return;
+            ApplyFilter();
+            _ = ReloadForScopeChangeAsync();
+        }
+    }
+
+    /// <summary>
+    /// 目前要向平台索取的範圍。預設只拿使用者自己的專案 ——
+    /// 這樣一開始就只會讀到 GitHub 個人頁面上看到的那個數字，
+    /// 也不會為了看不到的專案白跑上百次大小查詢。
+    /// </summary>
+    public RepositoryScope Scope => IncludeAllAccessibleRepos
+        ? RepositoryScope.Everything
+        : IncludeCollaboratorRepos
+            ? RepositoryScope.IncludingCollaborations
+            : RepositoryScope.OwnedOnly;
+
+    /// <summary>切換「協作 / 組織」勾選時，重新向平台索取，而不是只過濾本機清單。</summary>
+    private async Task ReloadForScopeChangeAsync()
+    {
+        if (Accounts.Count == 0 || IsLoading) return;
+        await RefreshAsync().ConfigureAwait(true);
     }
 
     private bool _showAllCommitSizes;
@@ -146,9 +174,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public bool IsIdle => !IsLoading;
 
-    public string RepoCountText => Repositories.Count == _allRepositories.Count
-        ? $"{Repositories.Count} 個專案"
-        : $"{Repositories.Count} / {_allRepositories.Count} 個專案";
+    /// <summary>
+    /// 分母是「目前範圍內看得到的專案數」，不是抓回來的原始筆數，
+    /// 避免畫面上出現和清單、和 GitHub 網頁都對不上的數字。
+    /// </summary>
+    public string RepoCountText
+    {
+        get
+        {
+            var inScope = _allRepositories.Count(r =>
+                RepositoryInfo.MatchesScope(r.AccessKind, IncludeCollaboratorRepos, IncludeAllAccessibleRepos));
+            return Repositories.Count == inScope
+                ? $"{Repositories.Count} 個專案"
+                : $"{Repositories.Count} / {inScope} 個專案";
+        }
+    }
 
     public string TotalSizeText
     {
@@ -675,7 +715,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             var service = _services.Git.Create(account.Platform);
             var progress = new Progress<string>(msg => SetStatus(msg, isError: false));
-            var repos = await service.ListRepositoriesAsync(account, progress, CancellationToken.None)
+            var repos = await service.ListRepositoriesAsync(account, Scope, progress, CancellationToken.None)
                 .ConfigureAwait(true);
 
             _allRepositories.RemoveAll(r => r.AccountId == account.Id);
@@ -690,8 +730,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 _allRepositories.Add(repo);
             }
 
-            if (row is not null) row.RepoCount = repos.Count;
             ApplyFilter();
+            if (row is not null)
+                row.RepoCount = _allRepositories.Count(r =>
+                    r.AccountId == account.Id &&
+                    RepositoryInfo.MatchesScope(r.AccessKind, IncludeCollaboratorRepos, IncludeAllAccessibleRepos));
         }
         catch (Exception ex)
         {
@@ -727,7 +770,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         foreach (var a in Accounts)
         {
-            var f = new AccountFilter(a) { RepoCount = _allRepositories.Count(r => r.AccountId == a.Id) };
+            var f = new AccountFilter(a)
+            {
+                RepoCount = _allRepositories.Count(r =>
+                    r.AccountId == a.Id &&
+                    RepositoryInfo.MatchesScope(r.AccessKind, IncludeCollaboratorRepos, IncludeAllAccessibleRepos))
+            };
             AccountFilters.Add(f);
         }
 

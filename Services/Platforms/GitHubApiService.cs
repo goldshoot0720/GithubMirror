@@ -33,15 +33,30 @@ public sealed class GitHubApiService : IGitService
         }
     }
 
-    public async Task<IReadOnlyList<RepositoryInfo>> ListRepositoriesAsync(
+    public Task<IReadOnlyList<RepositoryInfo>> ListRepositoriesAsync(
         AccountCredential credential, IProgress<string>? progress, CancellationToken ct)
+        => ListRepositoriesAsync(credential, RepositoryScope.OwnedOnly, progress, ct);
+
+    /// <summary>
+    /// 只向 GitHub 索取目前需要的範圍。預設 owner 一種身分，
+    /// 因此不會為了使用者看不到的協作／組織專案去跑上百次「最近一次提交大小」查詢。
+    /// </summary>
+    public async Task<IReadOnlyList<RepositoryInfo>> ListRepositoriesAsync(
+        AccountCredential credential, RepositoryScope scope, IProgress<string>? progress, CancellationToken ct)
     {
+        var affiliation = scope switch
+        {
+            RepositoryScope.OwnedOnly => "owner",
+            RepositoryScope.IncludingCollaborations => "owner,collaborator",
+            _ => "owner,collaborator,organization_member"
+        };
+
         var result = new List<RepositoryInfo>();
         for (var page = 1; ; page++)
         {
             progress?.Report($"正在讀取 GitHub 專案（第 {page} 頁）…");
             using var request = Rest.Get(
-                $"{ApiBase(credential)}/user/repos?per_page=100&page={page}&sort=updated&affiliation=owner,collaborator,organization_member");
+                $"{ApiBase(credential)}/user/repos?per_page=100&page={page}&sort=updated&affiliation={affiliation}");
             Rest.UseBearer(request, credential.Token);
             using var json = await Rest.SendJsonAsync(request, "讀取 GitHub 專案", ct).ConfigureAwait(false);
             var items = json.RootElement;
@@ -55,7 +70,13 @@ public sealed class GitHubApiService : IGitService
             progress,
             "正在讀取最近一次提交大小",
             ct).ConfigureAwait(false);
-        progress?.Report($"GitHub 讀取完成，共 {result.Count} 個專案。");
+        var scopeLabel = scope switch
+        {
+            RepositoryScope.OwnedOnly => "你自己的專案",
+            RepositoryScope.IncludingCollaborations => "自己的 ＋ 協作專案",
+            _ => "自己的 ＋ 協作 ＋ 組織專案"
+        };
+        progress?.Report($"GitHub 讀取完成：{scopeLabel} 共 {result.Count} 個。");
         return result;
     }
 

@@ -21,8 +21,11 @@ public sealed record DriveBackupFile(string Id, string Name)
 
 public sealed class GoogleDriveBackupClient : IDisposable
 {
+    public const string BackupFolderPath = "OAuth/GithubMirror";
+    private const string FolderMime = "application/vnd.google-apps.folder";
     private readonly HttpClient _http;
     private string? _accessToken;
+    private string? _backupFolderId;
     private DateTimeOffset _expiresAt;
     public bool IsConnected => _accessToken is not null && DateTimeOffset.UtcNow < _expiresAt;
     public GoogleDriveBackupClient() : this(new HttpClientHandler { AllowAutoRedirect = false }) { }
@@ -32,10 +35,12 @@ public sealed class GoogleDriveBackupClient : IDisposable
         _accessToken = token;
         _expiresAt = DateTimeOffset.UtcNow.AddSeconds(Math.Max(0, seconds - 60));
     }
+    internal void SetBackupFolder(string id) => _backupFolderId = id;
 
     public async Task SignInAsync(string clientJson, CancellationToken ct)
     {
         _accessToken = null;
+        _backupFolderId = null;
         using var doc = JsonDocument.Parse(clientJson);
         if (!doc.RootElement.TryGetProperty("installed", out var installed) ||
             !installed.TryGetProperty("client_id", out var id) || string.IsNullOrWhiteSpace(id.GetString()))
@@ -115,11 +120,14 @@ public sealed class GoogleDriveBackupClient : IDisposable
 
     public async Task<string> UploadAsync(byte[] encrypted, CancellationToken ct)
     {
+        var folderId = await EnsureBackupFolderAsync(ct);
         var name = $"GithubMirror-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.gmbak";
         using var multipart = new MultipartContent("related");
         multipart.Add(new StringContent(JsonSerializer.Serialize(new
         {
-            name, appProperties = new Dictionary<string, string> { ["githubMirrorBackup"] = "1" }
+            name,
+            parents = new[] { folderId },
+            appProperties = new Dictionary<string, string> { ["githubMirrorBackup"] = "1" }
         }), Encoding.UTF8, "application/json"));
         var media = new ByteArrayContent(encrypted);
         media.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
@@ -132,13 +140,46 @@ public sealed class GoogleDriveBackupClient : IDisposable
         return doc.RootElement.GetProperty("name").GetString()!;
     }
 
+    public async Task<string> EnsureBackupFolderAsync(CancellationToken ct)
+    {
+        if (!string.IsNullOrEmpty(_backupFolderId)) return _backupFolderId;
+        var oauth = await FindOrCreateFolderAsync("OAuth", "oauth", parentId: null, ct);
+        _backupFolderId = await FindOrCreateFolderAsync("GithubMirror", "app", parentId: oauth, ct);
+        return _backupFolderId;
+    }
+
+    private async Task<string> FindOrCreateFolderAsync(string name, string marker, string? parentId, CancellationToken ct)
+    {
+        var q = "trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='githubMirrorFolder' and value='" + EscapeQueryValue(marker) + "' }";
+        if (parentId is not null) q += " and '" + EscapeQueryValue(parentId) + "' in parents";
+        var url = "https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id,name)&q=" + Uri.EscapeDataString(q);
+        using (var lookup = Request(HttpMethod.Get, url))
+        using (var found = await _http.SendAsync(lookup, ct))
+        {
+            await CheckResponseAsync(found, ct);
+            using var doc = JsonDocument.Parse(await found.Content.ReadAsStringAsync(ct));
+            if (doc.RootElement.TryGetProperty("files", out var files) && files.GetArrayLength() > 0)
+                return files[0].GetProperty("id").GetString()!;
+        }
+
+        object metadata = parentId is null
+            ? new { name, mimeType = FolderMime, appProperties = new Dictionary<string, string> { ["githubMirrorFolder"] = marker } }
+            : new { name, mimeType = FolderMime, parents = new[] { parentId }, appProperties = new Dictionary<string, string> { ["githubMirrorFolder"] = marker } };
+        using var create = Request(HttpMethod.Post, "https://www.googleapis.com/drive/v3/files?fields=id,name");
+        create.Content = new StringContent(JsonSerializer.Serialize(metadata), Encoding.UTF8, "application/json");
+        using var created = await _http.SendAsync(create, ct);
+        await CheckResponseAsync(created, ct);
+        using var createdDoc = JsonDocument.Parse(await created.Content.ReadAsStringAsync(ct));
+        return createdDoc.RootElement.GetProperty("id").GetString()!;
+    }
+
     public async Task<List<DriveBackupFile>> ListAsync(CancellationToken ct)
     {
         var files = new List<DriveBackupFile>();
         string? page = null;
         do
         {
-            var q = "trashed = false and appProperties has { key='githubMirrorBackup' and value='1' }";
+            var q = "trashed = false and mimeType != 'application/vnd.google-apps.folder' and appProperties has { key='githubMirrorBackup' and value='1' }";
             var url = "https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=createdTime%20desc&fields=nextPageToken,files(id,name)&q=" + Uri.EscapeDataString(q);
             if (page is not null) url += "&pageToken=" + Uri.EscapeDataString(page);
             using var request = Request(HttpMethod.Get, url);
@@ -184,7 +225,11 @@ public sealed class GoogleDriveBackupClient : IDisposable
     private async Task CheckResponseAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode) return;
-        if (response.StatusCode == HttpStatusCode.Unauthorized) _accessToken = null;
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            _accessToken = null;
+            _backupFolderId = null;
+        }
 
         var reason = string.Empty;
         var detail = string.Empty;
@@ -257,9 +302,11 @@ public sealed class GoogleDriveBackupClient : IDisposable
             "請確認網路與 Google 帳號狀態；若上傳中斷，請先重新整理清單確認是否已建立備份，再決定要不要重試。"
     };
     private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private static string EscapeQueryValue(string value) => value.Replace("\\", "\\\\").Replace("'", "\\'");
     public void Dispose()
     {
         _accessToken = null;
+        _backupFolderId = null;
         _http.Dispose();
     }
 }

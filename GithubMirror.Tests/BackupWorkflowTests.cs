@@ -126,11 +126,86 @@ public sealed class BackupWorkflowTests
             var content = await request.Content!.ReadAsByteArrayAsync();
             Assert.DoesNotContain("never-send-this-in-clear", Encoding.UTF8.GetString(content));
             Assert.True(content.AsSpan().IndexOf(bytes) >= 0);
-            Assert.Contains("githubMirrorBackup", Encoding.UTF8.GetString(content));
+            var text = Encoding.UTF8.GetString(content);
+            Assert.Contains("githubMirrorBackup", text);
+            Assert.Contains("\"parents\"", text);
+            Assert.Contains("folder-githubmirror", text);
             return Json("{\"name\":\"saved.gmbak\"}");
         }));
         client.SetSession("session", 3600);
+        client.SetBackupFolder("folder-githubmirror");
         Assert.Equal("saved.gmbak", await client.UploadAsync(bytes, default));
+    }
+
+    [Fact]
+    public async Task Upload_creates_OAuth_GithubMirror_folder_when_missing()
+    {
+        var requests = new List<string>();
+        using var client = new GoogleDriveBackupClient(new Handler(async request =>
+        {
+            var uri = request.RequestUri!.AbsoluteUri;
+            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync();
+            requests.Add($"{request.Method.Method} {uri}");
+            if (request.Method == HttpMethod.Get)
+            {
+                Assert.Contains("githubMirrorFolder", uri);
+                return Json("{\"files\":[]}");
+            }
+            if (uri.Contains("uploadType=multipart", StringComparison.Ordinal))
+            {
+                Assert.Contains("app-folder-id", body);
+                Assert.DoesNotContain("never-send-this-in-clear", body);
+                return Json("{\"name\":\"saved.gmbak\"}");
+            }
+            Assert.Contains("application/vnd.google-apps.folder", body);
+            Assert.Contains("githubMirrorFolder", body);
+            if (body.Contains("\"OAuth\""))
+            {
+                Assert.DoesNotContain("parents", body);
+                return Json("{\"id\":\"oauth-folder-id\",\"name\":\"OAuth\"}");
+            }
+            Assert.Contains("GithubMirror", body);
+            Assert.Contains("oauth-folder-id", body);
+            return Json("{\"id\":\"app-folder-id\",\"name\":\"GithubMirror\"}");
+        }));
+        client.SetSession("session", 3600);
+        Assert.Equal("saved.gmbak", await client.UploadAsync(EncryptedBackup.Encrypt(new BackupData
+        {
+            Accounts = new() { new AccountCredential { Token = "never-send-this-in-clear" } }
+        }, "1234"), default));
+        Assert.Equal(5, requests.Count);
+        Assert.Contains(requests, r => r.StartsWith("GET ", StringComparison.Ordinal) && r.Contains("oauth"));
+        Assert.Contains(requests, r => r.StartsWith("POST ", StringComparison.Ordinal) && !r.Contains("uploadType"));
+        Assert.Contains(requests, r => r.Contains("uploadType=multipart"));
+    }
+
+    [Fact]
+    public async Task Upload_reuses_existing_OAuth_GithubMirror_folder()
+    {
+        var creates = 0;
+        using var client = new GoogleDriveBackupClient(new Handler(async request =>
+        {
+            var uri = request.RequestUri!.AbsoluteUri;
+            if (request.Method == HttpMethod.Get)
+            {
+                var q = Uri.UnescapeDataString(request.RequestUri.Query);
+                if (q.Contains("value='oauth'")) return Json("{\"files\":[{\"id\":\"oauth-folder-id\",\"name\":\"OAuth\"}]}");
+                Assert.Contains("oauth-folder-id", q);
+                return Json("{\"files\":[{\"id\":\"app-folder-id\",\"name\":\"GithubMirror\"}]}");
+            }
+            if (uri.Contains("uploadType=multipart", StringComparison.Ordinal))
+            {
+                Assert.Contains("app-folder-id", await request.Content!.ReadAsStringAsync());
+                return Json("{\"name\":\"saved.gmbak\"}");
+            }
+            creates++;
+            return Json("{\"id\":\"unexpected\"}");
+        }));
+        client.SetSession("session", 3600);
+        Assert.Equal("saved.gmbak", await client.UploadAsync(new byte[] { 1, 2, 3 }, default));
+        Assert.Equal(0, creates);
+        Assert.Equal("saved.gmbak", await client.UploadAsync(new byte[] { 4 }, default));
+        Assert.Equal(0, creates);
     }
 
     [Fact]
