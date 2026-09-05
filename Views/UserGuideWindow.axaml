@@ -1,0 +1,82 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GithubMirror.Views.UserGuideWindow"
+        Title="GithubMirror 使用教學"
+        Width="680" Height="570"
+        MinWidth="600" MinHeight="520"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource AppBg}">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="{StaticResource AppSurface}"
+                BorderBrush="{StaticResource AppBorder}" BorderThickness="0,0,0,1"
+                Padding="22,16">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="GithubMirror 新手導覽" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="跟著六個步驟完成第一次鏡像" Classes="muted" FontSize="12" />
+                </StackPanel>
+                <Border Grid.Column="1" Background="{StaticResource AppAccentSoft}"
+                        CornerRadius="16" Padding="12,6" VerticalAlignment="Center">
+                    <TextBlock x:Name="StepCounterText" Foreground="{StaticResource AppAccent}"
+                               FontWeight="SemiBold" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="26,24" RowDefinitions="Auto,Auto,*,Auto">
+            <ProgressBar Grid.Row="0" x:Name="StepProgress" Minimum="1" Maximum="6"
+                         Height="6" Margin="0,0,0,24" />
+
+            <Grid Grid.Row="1" ColumnDefinitions="72,*" Margin="0,0,0,18">
+                <Border Width="58" Height="58" CornerRadius="16"
+                        Background="{StaticResource AppAccentSoft}" VerticalAlignment="Top">
+                    <TextBlock x:Name="StepGlyphText" FontSize="25" FontWeight="Bold"
+                               Foreground="{StaticResource AppAccent}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
+                    <TextBlock x:Name="StepTitleText" FontSize="22" FontWeight="Bold"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="StepSummaryText" Classes="muted" FontSize="13"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="2" Classes="card" Background="{StaticResource AppSurface}"
+                    Padding="20" MinHeight="190">
+                <StackPanel Spacing="14">
+                    <TextBlock x:Name="StepBodyText" FontSize="14" LineHeight="23"
+                               TextWrapping="Wrap" />
+                    <Border Background="{StaticResource AppAccentSoft}" CornerRadius="8" Padding="12"
+                            IsVisible="{Binding #TipText.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="提示" FontWeight="Bold" Foreground="{StaticResource AppAccent}"
+                                       Margin="0,0,10,0" />
+                            <TextBlock x:Name="TipText" Grid.Column="1" TextWrapping="Wrap"
+                                       Foreground="{StaticResource AppText}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Grid.Row="3" Margin="0,14,0,0" Classes="caption" TextAlignment="Center"
+                       Text="可隨時按主畫面右上角「使用教學」重新查看。" />
+        </Grid>
+
+        <Border Grid.Row="2" Background="{StaticResource AppSurface}"
+                BorderBrush="{StaticResource AppBorder}" BorderThickness="0,1,0,0"
+                Padding="20,14">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <Button Grid.Column="0" Theme="{StaticResource SecondaryButton}"
+                        Content="關閉教學" Click="Close_Click" />
+                <Button x:Name="PreviousButton" Grid.Column="2" Margin="0,0,8,0"
+                        Theme="{StaticResource SecondaryButton}" Content="上一步"
+                        Click="Previous_Click" />
+                <Button x:Name="NextButton" Grid.Column="3" Width="112"
+                        Theme="{StaticResource PrimaryButton}" Content="下一步"
+                        Click="Next_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

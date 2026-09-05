@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>GithubMirror</RootNamespace>
+    <AssemblyName>GithubMirror</AssemblyName>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GithubMirror.Tests" />
+    <PackageReference Include="Avalonia" Version="11.0.10" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.0.10" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.10" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.10" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.0.10" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.0.10" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.4.0" />
+    <PackageReference Include="NAudio.WinMM" Version="2.4.0" />
+    <PackageReference Include="AWSSDK.CodeCommit" Version="3.7.502.56" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- =====================================================================
+       服務層（Codex 負責）需要時再打開這兩個套件：
+         <PackageReference Include="AWSSDK.CodeCommit" Version="3.7.*" />
+         <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+       ===================================================================== -->
+
+  <!-- =====================================================================
+       舊版半成品檔案：暫時排除在編譯之外，確認新版無誤後可直接刪除實體檔案，
+       並把這整個 ItemGroup 一併移除。
+       ===================================================================== -->
+  <ItemGroup>
+    <Compile Remove="GithubMirror.Core/**/*.cs" />
+    <Compile Remove="GithubMirror.Tests/**/*.cs" />
+    <Compile Remove="Models/Models.cs" />
+    <Compile Remove="Services/CloudServices.cs" />
+    <Compile Remove="Services/GitHubService.cs" />
+    <Compile Remove="Services/GitLabService.cs" />
+    <Compile Remove="Services/GitPlatformCatalog.cs" />
+    <Compile Remove="Services/HttpApi.cs" />
+    <Compile Remove="Services/OtherPlatformServices.cs" />
+    <Compile Remove="Services/PlatformServices.cs" />
+    <Compile Remove="ViewModels/MainViewModel.cs" />
+    <Compile Remove="Views/AddAccountWindow.axaml.cs" />
+    <Compile Remove="Views/MirrorDialog.axaml.cs" />
+    <AvaloniaResource Remove="Views/AddAccountWindow.axaml" />
+    <AvaloniaResource Remove="Views/MirrorDialog.axaml" />
+    <AvaloniaXaml Remove="Views/AddAccountWindow.axaml" />
+    <AvaloniaXaml Remove="Views/MirrorDialog.axaml" />
+    <None Remove="Views/AddAccountWindow.axaml" />
+    <None Remove="Views/MirrorDialog.axaml" />
+  </ItemGroup>
+
+</Project>

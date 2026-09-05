@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GithubMirror.Views.MirrorDialog"
+        Title="建立鏡像工作"
+        Width="620" Height="570" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="76,*,76" Background="{DynamicResource AppBackground}">
+        <Border Grid.Row="0" Background="#11192A" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="22,14">
+            <StackPanel Spacing="2">
+                <TextBlock Text="建立鏡像工作" FontSize="20" FontWeight="Bold" />
+                <TextBlock Text="系統會先建立空白目標倉庫，再推送完整 Git refs" Foreground="{DynamicResource TextMuted}" FontSize="12" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="24,22" Spacing="16">
+            <Border Background="#151E31" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Border Width="42" Height="42" CornerRadius="10" Background="#2C3564">
+                        <TextBlock Text="⇄" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock x:Name="RepositoryCountText" FontWeight="Bold" />
+                        <TextBlock x:Name="RepositorySummaryText" Foreground="{DynamicResource TextMuted}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="鏡像目的地 *" FontWeight="SemiBold" FontSize="12" />
+                <ComboBox x:Name="TargetAccountCombo" SelectionChanged="TargetChanged" />
+                <TextBlock x:Name="TargetHelpText" Foreground="{DynamicResource TextMuted}" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel x:Name="RepositoryNamePanel" Spacing="6">
+                <TextBlock Text="目標倉庫名稱 *" FontWeight="SemiBold" FontSize="12" />
+                <TextBox x:Name="TargetRepositoryBox" />
+            </StackPanel>
+
+            <Border Background="#101B30" CornerRadius="10" Padding="14">
+                <StackPanel Spacing="10">
+                    <CheckBox x:Name="IncludeLfsCheck" IsChecked="True" Content="同步 Git LFS 大型檔案（需安裝 Git LFS）" />
+                    <TextBlock Text="鏡像會覆寫目標端同名 refs。GitHub Pull Request、GitLab Merge Request 等服務專用 refs 會先移除，以提高跨平台相容性；Issue、PR 與 Wiki 內容不包含在 Git 鏡像內。"
+                               TextWrapping="Wrap" FontSize="11" Foreground="#AAB8CF" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="ValidationText" Foreground="{DynamicResource DangerBrush}" FontSize="12" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="#11192A" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,15">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Text="請確認目標端允許強制更新分支" Foreground="{DynamicResource WarningBrush}" FontSize="11" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="quiet" Content="取消" Width="92" Click="Cancel_Click" />
+                <Button Grid.Column="2" Classes="primary" Content="開始鏡像" Width="116" Click="Mirror_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

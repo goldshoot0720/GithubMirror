@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GithubMirror.Views.AddAccountWindow"
+        Title="新增 Git 服務連線"
+        Width="610" Height="720" MinHeight="620"
+        CanResize="True" WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="72,*,74" Background="{DynamicResource AppBackground}">
+        <Border Grid.Row="0" Background="#11192A" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="22,14">
+            <StackPanel Spacing="2">
+                <TextBlock Text="新增 Git 服務連線" FontSize="20" FontWeight="Bold" />
+                <TextBlock Text="加入 GitHub 來源帳號或任一鏡像目的地" FontSize="12" Foreground="{DynamicResource TextMuted}" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24,20" Spacing="14">
+                <Border Background="#171F32" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12">
+                    <TextBlock x:Name="PlatformHelpText" TextWrapping="Wrap" FontSize="12" Foreground="#B6C4D9" />
+                </Border>
+
+                <Grid ColumnDefinitions="*,*">
+                    <StackPanel Grid.Column="0" Spacing="6">
+                        <TextBlock Text="服務平台 *" FontWeight="SemiBold" FontSize="12" />
+                        <ComboBox x:Name="PlatformCombo" SelectionChanged="PlatformChanged" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="連線名稱" FontWeight="SemiBold" FontSize="12" />
+                        <TextBox x:Name="AliasBox" Watermark="例如：公司 GitHub" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel x:Name="UsernamePanel" Spacing="6">
+                    <TextBlock x:Name="UsernameLabel" Text="使用者名稱 *" FontWeight="SemiBold" FontSize="12" />
+                    <TextBox x:Name="UsernameBox" Watermark="帳號名稱" />
+                </StackPanel>
+
+                <StackPanel x:Name="TokenPanel" Spacing="6">
+                    <TextBlock x:Name="TokenLabel" Text="Personal Access Token *" FontWeight="SemiBold" FontSize="12" />
+                    <TextBox x:Name="TokenBox" PasswordChar="●" Watermark="只保留於本次工作階段" />
+                </StackPanel>
+
+                <StackPanel x:Name="ApiPanel" Spacing="6">
+                    <TextBlock x:Name="ApiLabel" Text="伺服器／API 網址" FontWeight="SemiBold" FontSize="12" />
+                    <TextBox x:Name="ApiUrlBox" Watermark="留白使用官方服務" />
+                </StackPanel>
+
+                <StackPanel x:Name="OrganizationPanel" Spacing="6">
+                    <TextBlock x:Name="OrganizationLabel" Text="組織（選填）" FontWeight="SemiBold" FontSize="12" />
+                    <TextBox x:Name="OrganizationBox" />
+                </StackPanel>
+
+                <StackPanel x:Name="ProjectPanel" Spacing="6">
+                    <TextBlock Text="Azure DevOps Project *" FontWeight="SemiBold" FontSize="12" />
+                    <TextBox x:Name="ProjectBox" Watermark="專案名稱或 ID" />
+                </StackPanel>
+
+                <Grid x:Name="AwsPanel" ColumnDefinitions="*,*">
+                    <StackPanel Grid.Column="0" Spacing="6">
+                        <TextBlock Text="AWS Region *" FontWeight="SemiBold" FontSize="12" />
+                        <TextBox x:Name="RegionBox" Watermark="ap-northeast-1" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="AWS CLI Profile" FontWeight="SemiBold" FontSize="12" />
+                        <TextBox x:Name="ProfileBox" Watermark="default" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock x:Name="ValidationText" Foreground="{DynamicResource DangerBrush}" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#11192A" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,14">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Text="憑證不會寫入磁碟" Foreground="{DynamicResource TextMuted}" FontSize="11" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="quiet" Content="取消" Width="92" Click="Cancel_Click" />
+                <Button Grid.Column="2" Classes="primary" Content="加入連線" Width="110" Click="Add_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

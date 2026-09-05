@@ -1,0 +1,87 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============ 色票 ============ -->
+    <SolidColorBrush x:Key="AppBg" Color="#F6F7F9" />
+    <SolidColorBrush x:Key="AppSurface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppSurfaceAlt" Color="#F0F2F5" />
+    <SolidColorBrush x:Key="AppBorder" Color="#E1E4E8" />
+    <SolidColorBrush x:Key="AppText" Color="#1F2328" />
+    <SolidColorBrush x:Key="AppMuted" Color="#6E7781" />
+    <SolidColorBrush x:Key="AppAccent" Color="#2563EB" />
+    <SolidColorBrush x:Key="AppAccentDark" Color="#1D4ED8" />
+    <SolidColorBrush x:Key="AppAccentSoft" Color="#E8F0FE" />
+    <SolidColorBrush x:Key="AppSuccess" Color="#1A7F37" />
+    <SolidColorBrush x:Key="AppSuccessSoft" Color="#E6F4EA" />
+    <SolidColorBrush x:Key="AppWarning" Color="#BF8700" />
+    <SolidColorBrush x:Key="AppDanger" Color="#CF222E" />
+    <SolidColorBrush x:Key="AppDangerSoft" Color="#FDECEE" />
+
+    <!-- 平台識別色（自訂色票，非官方商標） -->
+    <SolidColorBrush x:Key="PlatformGitHub" Color="#24292F" />
+    <SolidColorBrush x:Key="PlatformGitLab" Color="#E24329" />
+    <SolidColorBrush x:Key="PlatformBitbucket" Color="#0052CC" />
+    <SolidColorBrush x:Key="PlatformCodeberg" Color="#2185D0" />
+    <SolidColorBrush x:Key="PlatformGitea" Color="#5A9E28" />
+    <SolidColorBrush x:Key="PlatformAws" Color="#E08A00" />
+    <SolidColorBrush x:Key="PlatformAzure" Color="#0078D4" />
+    <SolidColorBrush x:Key="PlatformUnknown" Color="#6E7781" />
+
+    <!-- ============ 按鈕外觀 ============ -->
+    <ControlTheme x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="{StaticResource AppAccent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Style Selector="^:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AppAccentDark}" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
+        <Style Selector="^:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AppAccentDark}" />
+        </Style>
+        <Style Selector="^:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="#C3CBD8" />
+            <Setter Property="TextBlock.Foreground" Value="#F2F4F7" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="Padding" Value="11,7" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorder}" />
+        <Style Selector="^:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AppSurfaceAlt}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource AppMuted}" />
+        <Setter Property="Padding" Value="7" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Style Selector="^:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AppSurfaceAlt}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="DangerIconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource AppMuted}" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Style Selector="^:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AppDangerSoft}" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource AppDanger}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

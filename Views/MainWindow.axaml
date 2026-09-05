@@ -1,0 +1,787 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GithubMirror.ViewModels"
+        x:Class="GithubMirror.Views.MainWindow"
+        x:Name="Root"
+        Title="GithubMirror — 多帳號 Git 專案鏡像工具"
+        Width="1360" Height="880"
+        MinWidth="1100" MinHeight="680"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource AppBg}">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- ================= 頂列 ================= -->
+        <Border Grid.Row="0" Background="{StaticResource AppSurface}"
+                BorderBrush="{StaticResource AppBorder}" BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource AppAccent}">
+                        <PathIcon Data="{StaticResource IconLayers}" Width="18" Height="18" Foreground="White" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="GithubMirror" Classes="h1" />
+                        <TextBlock Text="多帳號專案清單 · 一鍵鏡像到 7 個平台" Classes="caption" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="1" Background="{StaticResource AppSurfaceAlt}" CornerRadius="8"
+                        Padding="10,0" Width="420" Height="36"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconSearch}" Width="14" Height="14"
+                                  Foreground="{StaticResource AppMuted}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding SearchText}" Watermark="搜尋專案名稱、擁有者、語言…"
+                                 BorderThickness="0" Background="Transparent" Padding="0"
+                                 VerticalAlignment="Center" VerticalContentAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Theme="{StaticResource SecondaryButton}" Click="ShowTutorial_Click"
+                            ToolTip.Tip="重新開啟操作教學">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="?" FontWeight="Bold" />
+                            <TextBlock Text="使用教學" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource SecondaryButton}" Command="{Binding RefreshCommand}"
+                            ToolTip.Tip="重新讀取專案清單">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+                            <TextBlock Text="重新整理" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================= 狀態橫幅 ================= -->
+        <Border Grid.Row="1" IsVisible="{Binding HasStatusMessage}" Padding="16,8"
+                Background="{StaticResource AppAccentSoft}"
+                BorderBrush="{StaticResource AppBorder}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <PathIcon Grid.Column="0" Data="{StaticResource IconInfo}" Width="15" Height="15"
+                          Foreground="{StaticResource AppAccent}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <ProgressBar Grid.Column="2" Classes="thin" IsIndeterminate="True" Width="90"
+                             VerticalAlignment="Center" Margin="10,0"
+                             IsVisible="{Binding IsLoading}" />
+                <Button Grid.Column="3" Theme="{StaticResource IconButton}" Command="{Binding DismissBannerCommand}">
+                    <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ================= 主要內容 ================= -->
+        <Grid Grid.Row="2" ColumnDefinitions="288,*,348" Margin="12">
+
+            <!-- 左：帳號 -->
+            <Border Grid.Column="0" Classes="card" Padding="12" Margin="0,0,10,0">
+                <DockPanel>
+
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconAccount}" Width="13" Height="13"
+                                      Foreground="{StaticResource AppMuted}" />
+                            <TextBlock Text="帳號" Classes="section" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 新增帳號按鈕 / 內嵌表單 -->
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
+
+                        <Button HorizontalAlignment="Stretch" Theme="{StaticResource SecondaryButton}"
+                                Command="{Binding ToggleAddPanelCommand}"
+                                IsVisible="{Binding !IsAddPanelOpen}">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconPlus}" Width="14" Height="14" />
+                                <TextBlock Text="新增帳號" />
+                            </StackPanel>
+                        </Button>
+
+                        <Border Classes="card" Background="{StaticResource AppSurfaceAlt}" Padding="10"
+                                IsVisible="{Binding IsAddPanelOpen}">
+                            <StackPanel Spacing="8">
+
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <PathIcon Grid.Column="0" Data="{StaticResource IconKey}" Width="13" Height="13"
+                                              Foreground="{StaticResource AppAccent}" Margin="0,0,6,0" />
+                                    <TextBlock Grid.Column="1" Text="新增帳號" Classes="section" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Theme="{StaticResource IconButton}"
+                                            Command="{Binding ToggleAddPanelCommand}" Padding="4">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11" />
+                                    </Button>
+                                </Grid>
+
+                                <!-- 1. 平台 -->
+                                <StackPanel>
+                                    <TextBlock Text="1 · 平台" Classes="label" />
+                                    <ComboBox ItemsSource="{Binding Platforms}"
+                                              SelectedItem="{Binding NewPlatform}"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <Border Classes="badge-sm"
+                                                            Background="{Binding Converter={StaticResource PlatformBrush}}">
+                                                        <TextBlock Classes="badge-text-sm"
+                                                                   Text="{Binding Converter={StaticResource PlatformInitials}}" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <!-- 2. Token -->
+                                <StackPanel>
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                                        <TextBlock Text="2 · Token（貼上後自動辨識平台）" Classes="label"
+                                                   Margin="0" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Theme="{StaticResource IconButton}" Padding="0"
+                                                Command="{Binding ToggleSetupGuideCommand}"
+                                                ToolTip.Tip="不知道 Token 去哪裡拿？點這裡看逐步教學">
+                                            <Border Width="20" Height="20" CornerRadius="10"
+                                                    Background="{StaticResource AppAccentSoft}">
+                                                <TextBlock Text="?" FontWeight="Bold" FontSize="12"
+                                                           Foreground="{StaticResource AppAccent}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Button>
+                                    </Grid>
+                                    <TextBox Text="{Binding NewToken}" PasswordChar="●"
+                                             Watermark="{Binding TokenHint}" />
+                                    <TextBlock Text="{Binding PlatformHint}" Classes="caption"
+                                               TextWrapping="Wrap" Margin="0,4,0,0" />
+                                </StackPanel>
+
+                                <!-- 2-1. 取得 Token 的逐步教學（「?」圖示開關） -->
+                                <Border IsVisible="{Binding IsSetupGuideOpen}" CornerRadius="8" Padding="10"
+                                        Background="{StaticResource AppAccentSoft}">
+                                    <StackPanel Spacing="8">
+
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding SetupGuideTitle}" FontSize="12"
+                                                       FontWeight="Bold" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource AppAccent}"
+                                                       VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" Theme="{StaticResource IconButton}" Padding="4"
+                                                    Command="{Binding ToggleSetupGuideCommand}"
+                                                    ToolTip.Tip="收起教學">
+                                                <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" />
+                                            </Button>
+                                        </Grid>
+
+                                        <ItemsControl ItemsSource="{Binding SetupSteps}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,6">
+                                                        <Border Width="17" Height="17" CornerRadius="9"
+                                                                Margin="0,1,7,0" VerticalAlignment="Top"
+                                                                Background="{StaticResource AppAccent}">
+                                                            <TextBlock Text="{Binding Number}" FontSize="10"
+                                                                       FontWeight="Bold" Foreground="White"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Text}"
+                                                                   FontSize="11.5" LineHeight="17"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource AppText}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock Text="{Binding SetupNote}" Classes="caption"
+                                                   TextWrapping="Wrap" LineHeight="16"
+                                                   IsVisible="{Binding HasSetupNote}" />
+
+                                        <Button HorizontalAlignment="Stretch" IsVisible="{Binding HasTokenUrl}"
+                                                Theme="{StaticResource SecondaryButton}"
+                                                Command="{Binding OpenTokenPageCommand}"
+                                                ToolTip.Tip="{Binding TokenUrl}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                                        HorizontalAlignment="Center">
+                                                <PathIcon Data="{StaticResource IconExternal}" Width="12" Height="12" />
+                                                <TextBlock Text="{Binding TokenUrlLabel}" FontSize="12" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 平台專屬必填欄位 -->
+                                <StackPanel IsVisible="{Binding ShowUsernameField}">
+                                    <TextBlock Text="{Binding UsernameLabel}" Classes="label" />
+                                    <TextBox Text="{Binding NewUsername}" />
+                                </StackPanel>
+
+                                <StackPanel IsVisible="{Binding ShowRegionField}">
+                                    <TextBlock Text="AWS 區域" Classes="label" />
+                                    <TextBox Text="{Binding NewRegion}" Watermark="ap-northeast-1" />
+                                </StackPanel>
+
+                                <StackPanel IsVisible="{Binding ShowGitHttpsFields}" Spacing="6">
+                                    <TextBlock Text="HTTPS Git 憑證（推送用）" Classes="label" />
+                                    <TextBox Text="{Binding NewGitUser}" Watermark="Git 使用者名稱" />
+                                    <TextBox Text="{Binding NewGitPass}" PasswordChar="●" Watermark="Git 密碼" />
+                                </StackPanel>
+
+                                <!-- 進階（自架站台 / 組織） -->
+                                <Expander IsVisible="{Binding ShowAdvancedToggle}"
+                                          IsExpanded="{Binding IsAdvancedOpen}"
+                                          Padding="0" Background="Transparent" BorderThickness="0">
+                                    <Expander.Header>
+                                        <TextBlock Text="進階設定（自架站台 / 組織）" Classes="caption" />
+                                    </Expander.Header>
+                                    <StackPanel Spacing="8" Margin="0,6,0,0">
+                                        <StackPanel IsVisible="{Binding ShowApiUrlField}">
+                                            <TextBlock Text="{Binding ApiUrlLabel}" Classes="label" />
+                                            <TextBox Text="{Binding NewApiUrl}" Watermark="{Binding ApiUrlHint}" />
+                                        </StackPanel>
+                                        <StackPanel IsVisible="{Binding ShowOrganizationField}">
+                                            <TextBlock Text="{Binding OrganizationLabel}" Classes="label" />
+                                            <TextBox Text="{Binding NewOrganization}" Watermark="{Binding OrganizationHint}" />
+                                        </StackPanel>
+                                        <StackPanel IsVisible="{Binding ShowProjectField}">
+                                            <TextBlock Text="{Binding ProjectLabel}" Classes="label" />
+                                            <TextBox Text="{Binding NewProject}" Watermark="{Binding ProjectHint}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Expander>
+
+                                <!-- 錯誤 -->
+                                <Border IsVisible="{Binding HasAddError}" Background="{StaticResource AppDangerSoft}"
+                                        CornerRadius="7" Padding="8">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconAlertCircle}" Width="13" Height="13"
+                                                  Foreground="{StaticResource AppDanger}" VerticalAlignment="Top" />
+                                        <TextBlock Text="{Binding AddError}" TextWrapping="Wrap" FontSize="11"
+                                                   Foreground="{StaticResource AppDanger}" MaxWidth="200" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Button Theme="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch"
+                                        Command="{Binding AddAccountCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconCheck}" Width="14" Height="14"
+                                                  IsVisible="{Binding !IsVerifying}" />
+                                        <TextBlock Text="驗證並加入" IsVisible="{Binding !IsVerifying}" />
+                                        <TextBlock Text="驗證中…" IsVisible="{Binding IsVerifying}" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 帳號清單 -->
+                    <ListBox Classes="accounts" ItemsSource="{Binding AccountFilters}"
+                             SelectedItem="{Binding SelectedFilter}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ToolTip.Tip="{Binding Error}">
+                                    <Border Grid.Column="0" Classes="badge" Margin="0,0,9,0"
+                                            Background="{Binding Platform, Converter={StaticResource PlatformBrush}}">
+                                        <TextBlock Classes="badge-text"
+                                                   Text="{Binding Platform, Converter={StaticResource PlatformInitials}}" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Subtitle}" Classes="caption"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                                                VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconAlertCircle}" Width="13" Height="13"
+                                                  Foreground="{StaticResource AppDanger}"
+                                                  IsVisible="{Binding HasError}" />
+                                        <ProgressBar Classes="thin" IsIndeterminate="True" Width="28"
+                                                     IsVisible="{Binding IsLoading}" />
+                                        <Border Classes="chip" Padding="7,2" IsVisible="{Binding HasRepoCount}">
+                                            <TextBlock Text="{Binding RepoCountDisplay}" FontSize="11"
+                                                       Foreground="{StaticResource AppMuted}" />
+                                        </Border>
+                                        <Button Theme="{StaticResource DangerIconButton}"
+                                                IsVisible="{Binding !IsAll}"
+                                                Command="{Binding $parent[Window].DataContext.RemoveAccountCommand}"
+                                                CommandParameter="{Binding Account}"
+                                                ToolTip.Tip="移除帳號">
+                                            <PathIcon Data="{StaticResource IconTrash}" Width="12" Height="12" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- 中：專案清單 -->
+            <Border Grid.Column="1" Classes="card" Margin="0,0,10,0" ClipToBounds="True">
+                <DockPanel>
+
+                    <!-- 工具列 -->
+                    <Border DockPanel.Dock="Top" Padding="12,10"
+                            BorderBrush="{StaticResource AppBorder}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+
+                            <Button Grid.Column="0" Theme="{StaticResource SecondaryButton}" Padding="9,6"
+                                    Command="{Binding SelectAllCommand}" ToolTip.Tip="全選目前清單">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <PathIcon Data="{StaticResource IconSelectAll}" Width="13" Height="13" />
+                                    <TextBlock Text="全選" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Column="1" Theme="{StaticResource SecondaryButton}" Padding="9,6"
+                                    Margin="6,0,0,0" Command="{Binding SelectNoneCommand}" ToolTip.Tip="取消全部勾選">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                                    <TextBlock Text="清除" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" Margin="12,0,0,0"
+                                        VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconFilter}" Width="13" Height="13"
+                                          Foreground="{StaticResource AppMuted}" />
+                                <ComboBox ItemsSource="{Binding VisibilityFilters}"
+                                          SelectedItem="{Binding VisibilityFilter}" Width="110" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Border Classes="chip">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconFolder}" Width="12" Height="12"
+                                                  Foreground="{StaticResource AppMuted}" />
+                                        <TextBlock Text="{Binding RepoCountText}" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="chip">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconDatabase}" Width="12" Height="12"
+                                                  Foreground="{StaticResource AppMuted}" />
+                                        <TextBlock Text="{Binding TotalSizeText}" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="chip" Background="{StaticResource AppAccentSoft}">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconCheck}" Width="12" Height="12"
+                                                  Foreground="{StaticResource AppAccent}" />
+                                        <TextBlock Text="{Binding SelectedCountText}" FontSize="12"
+                                                   Foreground="{StaticResource AppAccent}" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid>
+                        <!-- 專案表格 -->
+                        <DataGrid ItemsSource="{Binding Repositories}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserSortColumns="True"
+                                  HeadersVisibility="Column"
+                                  IsVisible="{Binding HasRepositories}">
+                            <DataGrid.Columns>
+
+                                <DataGridTemplateColumn Header="" Width="42" CanUserSort="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="專案" Width="*" SortMemberPath="Name">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="4,0">
+                                                <PathIcon Grid.Column="0" Width="13" Height="13" Margin="0,0,8,0"
+                                                          Data="{Binding IsPrivate, Converter={StaticResource PrivacyGeometry}}"
+                                                          Foreground="{Binding IsPrivate, Converter={StaticResource PrivacyBrush}}"
+                                                          ToolTip.Tip="{Binding VisibilityDisplay}" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding DescriptionDisplay}" Classes="caption"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="來源" Width="150" SortMemberPath="SourcePlatform">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                                <Border Classes="badge-sm"
+                                                        Background="{Binding SourcePlatform, Converter={StaticResource PlatformBrush}}">
+                                                    <TextBlock Classes="badge-text-sm"
+                                                               Text="{Binding SourcePlatform, Converter={StaticResource PlatformInitials}}" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Owner}" VerticalAlignment="Center"
+                                                           FontSize="12" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="大小" Width="110" SortMemberPath="SizeInBytes">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <PathIcon Data="{StaticResource IconDatabase}" Width="11" Height="11"
+                                                          Foreground="{StaticResource AppMuted}" />
+                                                <TextBlock Text="{Binding SizeDisplay}" FontSize="12" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="語言" Width="120" SortMemberPath="Language">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <PathIcon Data="{StaticResource IconCode}" Width="11" Height="11"
+                                                          Foreground="{StaticResource AppMuted}" />
+                                                <TextBlock Text="{Binding LanguageDisplay}" FontSize="12" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="星星" Width="86" SortMemberPath="Stars">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <PathIcon Data="{StaticResource IconStar}" Width="11" Height="11"
+                                                          Foreground="{StaticResource AppWarning}" />
+                                                <TextBlock Text="{Binding Stars}" FontSize="12" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="最後更新" Width="150" SortMemberPath="LastUpdated">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <PathIcon Data="{StaticResource IconClock}" Width="11" Height="11"
+                                                          Foreground="{StaticResource AppMuted}" />
+                                                <TextBlock Text="{Binding LastUpdatedDisplay}" FontSize="12" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- 空狀態：還沒有帳號 → 直接把連線三步驟攤在最顯眼的位置 -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding HasNoAccounts}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14"
+                                        MaxWidth="560" Margin="20,28">
+
+                                <Border Width="66" Height="66" CornerRadius="20" HorizontalAlignment="Center"
+                                        Background="{StaticResource AppAccentSoft}">
+                                    <PathIcon Data="{StaticResource IconKey}" Width="30" Height="30"
+                                              Foreground="{StaticResource AppAccent}" />
+                                </Border>
+
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="三步驟連上 GitHub" Classes="h1" FontSize="20"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock TextWrapping="Wrap" TextAlignment="Center" Classes="muted"
+                                               Text="GithubMirror 用 GitHub API 讀取你的專案，所以需要一組 Personal Access Token。整段流程大約一分鐘。" />
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="*,*,*">
+                                    <Border Grid.Column="0" Classes="card" Padding="12" Margin="0,0,5,0">
+                                        <StackPanel Spacing="7">
+                                            <Border Width="24" Height="24" CornerRadius="12"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{StaticResource AppAccent}">
+                                                <TextBlock Text="1" FontWeight="Bold" FontSize="12" Foreground="White"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock Text="產生 Token" FontWeight="SemiBold" FontSize="13" />
+                                            <TextBlock Classes="caption" TextWrapping="Wrap" LineHeight="16"
+                                                       Text="GitHub → Settings → Developer settings → Tokens (classic)，勾選 repo 後產生。" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="1" Classes="card" Padding="12" Margin="5,0">
+                                        <StackPanel Spacing="7">
+                                            <Border Width="24" Height="24" CornerRadius="12"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{StaticResource AppAccent}">
+                                                <TextBlock Text="2" FontWeight="Bold" FontSize="12" Foreground="White"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock Text="貼上驗證" FontWeight="SemiBold" FontSize="13" />
+                                            <TextBlock Classes="caption" TextWrapping="Wrap" LineHeight="16"
+                                                       Text="貼進左側「新增帳號」的 Token 欄，程式自動辨識平台並抓出帳號名稱。" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="2" Classes="card" Padding="12" Margin="5,0,0,0">
+                                        <StackPanel Spacing="7">
+                                            <Border Width="24" Height="24" CornerRadius="12"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{StaticResource AppAccent}">
+                                                <TextBlock Text="3" FontWeight="Bold" FontSize="12" Foreground="White"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock Text="挑專案鏡像" FontWeight="SemiBold" FontSize="13" />
+                                            <TextBlock Classes="caption" TextWrapping="Wrap" LineHeight="16"
+                                                       Text="勾選專案、選好目標帳號，按「開始鏡像」複製所有分支與標籤。" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                    <Button Theme="{StaticResource PrimaryButton}"
+                                            Command="{Binding StartWithPlatformCommand}" CommandParameter="GitHub">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconPlus}" Width="14" Height="14" />
+                                            <TextBlock Text="照著步驟連 GitHub" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Theme="{StaticResource SecondaryButton}" Click="ShowTutorial_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="?" FontWeight="Bold" />
+                                            <TextBlock Text="完整使用教學" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <TextBlock Classes="caption" TextAlignment="Center" TextWrapping="Wrap"
+                                           Text="其他平台也一樣：在「新增帳號」切換平台，按 Token 欄旁的「?」就會顯示該平台的取得步驟。支援 GitHub、GitLab、Bitbucket、Codeberg、Gitea、AWS CodeCommit、Azure Repos。" />
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- 空狀態：有帳號但沒有符合的專案 -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
+                                    IsVisible="{Binding HasNoRepositories}">
+                            <PathIcon Data="{StaticResource IconFolder}" Width="34" Height="34"
+                                      Foreground="{StaticResource AppMuted}" HorizontalAlignment="Center"
+                                      IsVisible="{Binding HasAccounts}" />
+                            <TextBlock Text="沒有符合條件的專案" Classes="muted" HorizontalAlignment="Center"
+                                       IsVisible="{Binding HasAccounts}" />
+                        </StackPanel>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- 右：鏡像設定 -->
+            <Border Grid.Column="2" Classes="card" Padding="14">
+                <DockPanel>
+
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,12">
+                        <PathIcon Data="{StaticResource IconArrowRight}" Width="14" Height="14"
+                                  Foreground="{StaticResource AppAccent}" />
+                        <TextBlock Text="鏡像到" Classes="section" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 底部：開始按鈕 -->
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+
+                        <Button Theme="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch"
+                                Height="46" Command="{Binding StartMirrorCommand}"
+                                IsVisible="{Binding IsNotMirroring}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconPlay}" Width="15" Height="15" />
+                                <TextBlock Text="{Binding StartButtonText}" FontSize="14" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Theme="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch"
+                                Height="46" Command="{Binding CancelMirrorCommand}"
+                                IsVisible="{Binding IsMirroring}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconStop}" Width="14" Height="14"
+                                          Foreground="{StaticResource AppDanger}" />
+                                <TextBlock Text="停止鏡像" Foreground="{StaticResource AppDanger}" />
+                            </StackPanel>
+                        </Button>
+
+                        <TextBlock Classes="caption" TextWrapping="Wrap" TextAlignment="Center"
+                                   Text="會完整複製所有分支與標籤（git clone --mirror → push --mirror）" />
+                    </StackPanel>
+
+                    <!-- 中間：目標與選項 -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="14">
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="目標帳號（可複選）" Classes="label" />
+
+                                <TextBlock Classes="caption" TextWrapping="Wrap"
+                                           IsVisible="{Binding HasNoAccounts}"
+                                           Text="先在左側加入至少一個帳號，這裡就會出現可勾選的目標。" />
+
+                                <ItemsControl ItemsSource="{Binding Targets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="card" Padding="9" Margin="0,0,0,6">
+                                                <Grid ColumnDefinitions="Auto,Auto,*">
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                              VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                    <Border Grid.Column="1" Classes="badge-sm" Margin="0,0,8,0"
+                                                            Background="{Binding Platform, Converter={StaticResource PlatformBrush}}">
+                                                        <TextBlock Classes="badge-text-sm"
+                                                                   Text="{Binding Platform, Converter={StaticResource PlatformInitials}}" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" FontSize="12.5"
+                                                                   FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Subtitle}" Classes="caption"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="目標名稱規則" Classes="label" />
+                                <TextBox Text="{Binding NameTemplate}" Watermark="{}{name}" />
+                                <TextBlock Text="{Binding NamePreview}" Classes="caption" />
+                                <TextBlock Classes="caption" TextWrapping="Wrap"
+                                           Text="可用變數：{name} 專案名、{owner} 擁有者、{platform} 來源平台。例如 mirror-{name}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="選項" Classes="label" />
+                                <CheckBox IsChecked="{Binding KeepPrivate}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconLock}" Width="12" Height="12"
+                                                  Foreground="{StaticResource AppWarning}" />
+                                        <TextBlock Text="私有專案維持私有" FontSize="12.5" />
+                                    </StackPanel>
+                                </CheckBox>
+                            </StackPanel>
+
+                            <Border Classes="card" Background="{StaticResource AppSurfaceAlt}" Padding="10">
+                                <StackPanel Spacing="7">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="♫" FontSize="15" Foreground="{StaticResource AppAccent}" />
+                                        <TextBlock Text="鏡像背景音樂" Classes="label" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="MusicTrackCombo" SelectionChanged="MusicTrackChanged">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <CheckBox x:Name="AutoPlayMusicCheck" IsChecked="True" Content="鏡像時自動播放" />
+                                    <TextBlock x:Name="MusicStatusText" Text="已待命" Classes="caption"
+                                               TextWrapping="Wrap" MaxHeight="34" />
+                                    <Grid ColumnDefinitions="*,*">
+                                        <Button x:Name="MusicToggleButton" Grid.Column="0" Margin="0,0,3,0"
+                                                Theme="{StaticResource SecondaryButton}" Click="MusicToggle_Click">
+                                            <TextBlock x:Name="MusicToggleText" Text="▶ 播放" />
+                                        </Button>
+                                        <Button Grid.Column="1" Margin="3,0,0,0" Theme="{StaticResource SecondaryButton}"
+                                                Click="OpenMusicSource_Click">
+                                            <TextBlock Text="歌曲來源 ↗" />
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ================= 底部：鏡像任務 ================= -->
+        <Border Grid.Row="3" Classes="panel" BorderThickness="0,1,0,0" Height="196"
+                IsVisible="{Binding HasJobs}">
+            <DockPanel Margin="14,10">
+
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{StaticResource IconLayers}" Width="13" Height="13"
+                                  Foreground="{StaticResource AppMuted}" />
+                        <TextBlock Text="鏡像任務" Classes="section" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Theme="{StaticResource SecondaryButton}" Padding="9,5"
+                            Command="{Binding ClearFinishedJobsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <PathIcon Data="{StaticResource IconTrash}" Width="12" Height="12" />
+                            <TextBlock Text="清除已完成" FontSize="12" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <ListBox ItemsSource="{Binding Jobs}" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="Auto,260,*,Auto" Margin="0,3" ToolTip.Tip="{Binding Log}">
+
+                                <PathIcon Grid.Column="0" Width="16" Height="16" Margin="0,0,10,0"
+                                          Data="{Binding Status, Converter={StaticResource StatusGeometry}}"
+                                          Foreground="{Binding Status, Converter={StaticResource StatusBrush}}"
+                                          VerticalAlignment="Center" />
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Border Classes="badge-sm" Width="20" Height="16"
+                                                Background="{Binding SourcePlatform, Converter={StaticResource PlatformBrush}}">
+                                            <TextBlock Classes="badge-text-sm" FontSize="8"
+                                                       Text="{Binding SourcePlatform, Converter={StaticResource PlatformInitials}}" />
+                                        </Border>
+                                        <PathIcon Data="{StaticResource IconArrowRight}" Width="10" Height="10"
+                                                  Foreground="{StaticResource AppMuted}" VerticalAlignment="Center" />
+                                        <Border Classes="badge-sm" Width="20" Height="16"
+                                                Background="{Binding TargetPlatform, Converter={StaticResource PlatformBrush}}">
+                                            <TextBlock Classes="badge-text-sm" FontSize="8"
+                                                       Text="{Binding TargetPlatform, Converter={StaticResource PlatformInitials}}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding SourceRepository}" FontWeight="SemiBold"
+                                                   FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding TargetRepository}" Classes="caption"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="14,0" Spacing="3">
+                                    <ProgressBar Classes="thin" Value="{Binding Percent}" />
+                                    <TextBlock Text="{Binding Step}" Classes="caption"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center" MinWidth="72">
+                                    <TextBlock Text="{Binding StatusDisplay}" FontSize="12" FontWeight="SemiBold"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{Binding Status, Converter={StaticResource StatusBrush}}" />
+                                    <TextBlock Text="{Binding PercentDisplay}" Classes="caption"
+                                               HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
