@@ -117,18 +117,29 @@ public sealed class GitLabApiService : IGitService
     {
         var fullPath = Rest.Str(item, "path_with_namespace");
         var slash = fullPath.LastIndexOf('/');
+        var owner = slash > 0 ? fullPath[..slash] : string.Empty;
+        var organizationOwned = false;
+        if (item.TryGetProperty("namespace", out var ns))
+        {
+            var nsPath = Rest.Str(ns, "full_path", Rest.Str(ns, "path"));
+            if (!string.IsNullOrWhiteSpace(nsPath)) owner = nsPath;
+            organizationOwned = string.Equals(Rest.Str(ns, "kind"), "group", StringComparison.OrdinalIgnoreCase);
+        }
         long? size = null;
         if (item.TryGetProperty("statistics", out var statistics)) size = Rest.Long(statistics, "repository_size");
         return new RepositoryInfo
         {
             Name = Rest.Str(item, "name"),
-            Owner = slash > 0 ? fullPath[..slash] : string.Empty,
+            Owner = owner,
+            IsOrganizationOwned = organizationOwned,
             NativeId = Rest.Long(item, "id")?.ToString() ?? string.Empty,
             CloneUrl = Rest.Str(item, "http_url_to_repo"),
             WebUrl = Rest.Str(item, "web_url"),
             Description = Rest.Str(item, "description"),
             DefaultBranch = Rest.Str(item, "default_branch"),
             SizeInBytes = size,
+            HistorySizeInBytes = size,
+            LatestCommitSizeInBytes = size,
             Stars = Rest.Int(item, "star_count"),
             Forks = Rest.Int(item, "forks_count"),
             IsPrivate = !string.Equals(Rest.Str(item, "visibility"), "public", StringComparison.OrdinalIgnoreCase),

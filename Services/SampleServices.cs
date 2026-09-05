@@ -60,6 +60,8 @@ public sealed class SampleGitService : IGitService
         for (var i = 0; i < count; i++)
         {
             var isPrivate = rng.Next(0, 3) == 0;
+            var latest = (long)rng.Next(120, 12_000) * 1024;
+            var history = latest + (long)rng.Next(800, 2_000_000) * 1024;
             repos.Add(new RepositoryInfo
             {
                 Name = Names[i],
@@ -68,7 +70,9 @@ public sealed class SampleGitService : IGitService
                 WebUrl = $"https://example.com/{credential.Username}/{Names[i]}",
                 Description = "（示範資料）服務層接上後會顯示真實描述",
                 DefaultBranch = "main",
-                SizeInBytes = (long)rng.Next(120, 900_000) * 1024,
+                LatestCommitSizeInBytes = latest,
+                HistorySizeInBytes = history,
+                SizeInBytes = latest,
                 Stars = rng.Next(0, 480),
                 Forks = rng.Next(0, 60),
                 IsPrivate = isPrivate,
@@ -79,6 +83,40 @@ public sealed class SampleGitService : IGitService
                 AccountDisplay = credential.DisplayName
             });
         }
+
+        repos.Add(new RepositoryInfo
+        {
+            Name = "shared-notes",
+            Owner = "octocat",
+            CloneUrl = "https://example.com/octocat/shared-notes.git",
+            WebUrl = "https://example.com/octocat/shared-notes",
+            Description = "（示範）其他使用者邀請協作的專案",
+            DefaultBranch = "main",
+            LatestCommitSizeInBytes = 2400 * 1024,
+            HistorySizeInBytes = 48_000 * 1024,
+            SizeInBytes = 2400 * 1024,
+            Language = "Markdown",
+            SourcePlatform = Platform,
+            AccountId = credential.Id,
+            AccountDisplay = credential.DisplayName
+        });
+        repos.Add(new RepositoryInfo
+        {
+            Name = "company-website",
+            Owner = "acme-org",
+            IsOrganizationOwned = true,
+            CloneUrl = "https://example.com/acme-org/company-website.git",
+            WebUrl = "https://example.com/acme-org/company-website",
+            Description = "（示範）組織／群組專案",
+            DefaultBranch = "main",
+            LatestCommitSizeInBytes = 8800 * 1024,
+            HistorySizeInBytes = 220_000 * 1024,
+            SizeInBytes = 8800 * 1024,
+            Language = "TypeScript",
+            SourcePlatform = Platform,
+            AccountId = credential.Id,
+            AccountDisplay = credential.DisplayName
+        });
 
         progress?.Report($"完成，共 {repos.Count} 個專案。");
         return repos;

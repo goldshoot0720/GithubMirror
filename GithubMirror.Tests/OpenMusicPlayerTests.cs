@@ -5,6 +5,21 @@ namespace GithubMirror.Tests;
 
 public class OpenMusicPlayerTests
 {
+    [Fact]
+    public void Continue_playback_advances_and_wraps_the_playlist_by_default()
+    {
+        using var player = new OpenMusicPlayer(_ => Task.FromResult("https://invalid.example/audio.mp3"));
+        Assert.True(player.ContinueToNextTrack);
+        Assert.Equal(OpenMusicPlayer.Tracks[0], player.SelectedTrack);
+        Assert.Equal(OpenMusicPlayer.Tracks[1], OpenMusicPlayer.TrackAfter(OpenMusicPlayer.Tracks[0]));
+        Assert.Equal(OpenMusicPlayer.Tracks[0], OpenMusicPlayer.TrackAfter(OpenMusicPlayer.Tracks[^1]));
+        player.AdvanceToNextTrack();
+        Assert.Equal(OpenMusicPlayer.Tracks[1], player.SelectedTrack);
+        player.SelectTrack(OpenMusicPlayer.Tracks[^1]);
+        player.AdvanceToNextTrack();
+        Assert.Equal(OpenMusicPlayer.Tracks[0], player.SelectedTrack);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

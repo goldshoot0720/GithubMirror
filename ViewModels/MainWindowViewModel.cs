@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -11,7 +11,7 @@ using GithubMirror.Services;
 
 namespace GithubMirror.ViewModels;
 
-public sealed class MainWindowViewModel : ObservableObject
+public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly AppServices _services;
     private readonly List<RepositoryInfo> _allRepositories = new();
@@ -43,7 +43,11 @@ public sealed class MainWindowViewModel : ObservableObject
         DismissBannerCommand = new RelayCommand(_ => StatusMessage = string.Empty);
         ToggleSetupGuideCommand = new RelayCommand(_ => IsSetupGuideOpen = !IsSetupGuideOpen);
         OpenTokenPageCommand = new RelayCommand(_ => OpenTokenPage(), _ => HasTokenUrl);
+        GitHubNextCommand = new RelayCommand(_ => GitHubSetupStep++, _ => GitHubSetupStep < 4 && !IsVerifying);
+        GitHubBackCommand = new RelayCommand(_ => GitHubSetupStep--, _ => GitHubSetupStep > 1 && !IsVerifying);
+        GitHubPasteCommand = new RelayCommand(_ => GitHubSetupStep = 4, _ => !IsVerifying);
         StartWithPlatformCommand = new RelayCommand(p => StartWithPlatform(p as string));
+        ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty, _ => HasSearchText);
     }
 
     // =====================================================================
@@ -87,7 +91,43 @@ public sealed class MainWindowViewModel : ObservableObject
     public string SearchText
     {
         get => _searchText;
-        set { if (SetProperty(ref _searchText, value)) ApplyFilter(); }
+        set
+        {
+            if (!SetProperty(ref _searchText, value ?? string.Empty)) return;
+            OnPropertyChanged(nameof(HasSearchText));
+            OnPropertyChanged(nameof(EmptyRepositoriesTitle));
+            OnPropertyChanged(nameof(EmptyRepositoriesHint));
+            ClearSearchCommand.RaiseCanExecuteChanged();
+            ApplyFilter();
+        }
+    }
+
+    public bool HasSearchText => !string.IsNullOrWhiteSpace(SearchText);
+
+    private bool _includeCollaboratorRepos;
+    public bool IncludeCollaboratorRepos
+    {
+        get => _includeCollaboratorRepos;
+        set { if (SetProperty(ref _includeCollaboratorRepos, value)) ApplyFilter(); }
+    }
+
+    private bool _includeAllAccessibleRepos;
+    public bool IncludeAllAccessibleRepos
+    {
+        get => _includeAllAccessibleRepos;
+        set { if (SetProperty(ref _includeAllAccessibleRepos, value)) ApplyFilter(); }
+    }
+
+    private bool _showAllCommitSizes;
+    public bool ShowAllCommitSizes
+    {
+        get => _showAllCommitSizes;
+        set
+        {
+            if (!SetProperty(ref _showAllCommitSizes, value)) return;
+            ApplyDisplayedSizes();
+            ApplyFilter();
+        }
     }
 
     private bool _isLoading;
@@ -128,6 +168,14 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool HasRepositories => Repositories.Count > 0;
     public bool HasNoRepositories => Repositories.Count == 0;
+
+    public string EmptyRepositoriesTitle => HasSearchText
+        ? $"沒有符合「{SearchText.Trim()}」的專案"
+        : "沒有符合條件的專案";
+
+    public string EmptyRepositoriesHint => HasSearchText
+        ? "試試其他關鍵字，或按搜尋列右側的清除按鈕顯示全部專案。"
+        : "預設只顯示帳號自己的專案。可勾選「協作的專案」或「所有可能專案」。";
 
     // =====================================================================
     //  鏡像設定
@@ -211,6 +259,46 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _newPlatform, value))
                 RaiseDescriptorChanged();
         }
+    }
+
+    public RelayCommand GitHubNextCommand { get; }
+    public RelayCommand GitHubBackCommand { get; }
+    public RelayCommand GitHubPasteCommand { get; }
+    public bool IsGitHubSetup => NewPlatform == PlatformIds.GitHub;
+    public bool ShowTokenEntry => !IsGitHubSetup || GitHubSetupStep == 4;
+    public bool ShowGenericSetupGuide => !IsGitHubSetup && IsSetupGuideOpen;
+    private int _gitHubSetupStep = 1;
+    public int GitHubSetupStep
+    {
+        get => _gitHubSetupStep;
+        set
+        {
+            if (!SetProperty(ref _gitHubSetupStep, Math.Clamp(value, 1, 4))) return;
+            RaiseGitHubSetupChanged();
+        }
+    }
+    public string GitHubStepTitle => GitHubSetupStep switch
+    {
+        1 => "1 / 4 · 登入 GitHub",
+        2 => "2 / 4 · 填寫名稱與期限",
+        3 => "3 / 4 · 設定存取權限",
+        _ => "4 / 4 · 貼上 Token 並驗證"
+    };
+    public string GitHubStepHelp => GitHubSetupStep switch
+    {
+        1 => "先在瀏覽器登入要連接的 GitHub 帳號。按下方按鈕開啟 Token 頁面，選 Generate new token → Generate new token (classic)。完成後按下一步。",
+        2 => "在 GitHub 頁面的 Note 填入 GithubMirror（方便日後辨識用途）。Expiration 選擇有效期限，例如 90 days；到期後需重新產生 Token。填好後按下一步。",
+        3 => "勾選 repo，以讀取私有倉庫及推送鏡像。若目標需要寫入 .github/workflows，另勾選 workflow。按 Generate token，再複製完整 Token；離開頁面後無法再次查看。組織若使用 SSO，還需 Configure SSO 授權；若禁用 classic Token，請依組織政策使用 fine-grained Token。",
+        _ => "在下方貼上剛複製的 Token（不是 GitHub 密碼或網址），再按驗證並加入。帳號名稱會自動取得。一般 github.com 個人帳號只需 Token，進階設定可留空；組織填名稱而非網址，企業版才需填站台網址。"
+    };
+    private void RaiseGitHubSetupChanged()
+    {
+        foreach (var name in new[] { nameof(IsGitHubSetup), nameof(ShowTokenEntry), nameof(ShowGenericSetupGuide), nameof(GitHubStepTitle), nameof(GitHubStepHelp) })
+            OnPropertyChanged(name);
+        GitHubNextCommand.RaiseCanExecuteChanged();
+        GitHubBackCommand.RaiseCanExecuteChanged();
+        GitHubPasteCommand.RaiseCanExecuteChanged();
+        AddAccountCommand.RaiseCanExecuteChanged();
     }
 
     private string _newToken = string.Empty;
@@ -302,7 +390,12 @@ public sealed class MainWindowViewModel : ObservableObject
         set
         {
             if (SetProperty(ref _isVerifying, value))
+            {
                 AddAccountCommand.RaiseCanExecuteChanged();
+                GitHubNextCommand.RaiseCanExecuteChanged();
+                GitHubBackCommand.RaiseCanExecuteChanged();
+                GitHubPasteCommand.RaiseCanExecuteChanged();
+            }
         }
     }
 
@@ -339,7 +432,11 @@ public sealed class MainWindowViewModel : ObservableObject
     public bool IsSetupGuideOpen
     {
         get => _isSetupGuideOpen;
-        set => SetProperty(ref _isSetupGuideOpen, value);
+        set
+        {
+            if (SetProperty(ref _isSetupGuideOpen, value))
+                OnPropertyChanged(nameof(ShowGenericSetupGuide));
+        }
     }
 
     public string SetupGuideTitle => $"如何取得 {NewPlatform} 的連線權限";
@@ -355,7 +452,7 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         get
         {
-            if (IsVerifying) return false;
+            if (IsVerifying || !ShowTokenEntry) return false;
             if (string.IsNullOrWhiteSpace(NewToken)) return false;
             var d = Descriptor;
             if (d.NeedsUsername && string.IsNullOrWhiteSpace(NewUsername)) return false;
@@ -368,6 +465,7 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private void RaiseDescriptorChanged()
     {
+        RaiseGitHubSetupChanged();
         foreach (var name in new[]
                  {
                      nameof(Descriptor), nameof(ShowUsernameField), nameof(ShowApiUrlField),
@@ -440,6 +538,7 @@ public sealed class MainWindowViewModel : ObservableObject
     public RelayCommand ToggleSetupGuideCommand { get; }
     public RelayCommand OpenTokenPageCommand { get; }
     public RelayCommand StartWithPlatformCommand { get; }
+    public RelayCommand ClearSearchCommand { get; }
 
     // =====================================================================
     //  行為
@@ -585,6 +684,8 @@ public sealed class MainWindowViewModel : ObservableObject
                 repo.AccountId = account.Id;
                 repo.AccountDisplay = account.DisplayName;
                 repo.SourcePlatform = account.Platform;
+                repo.AccessKind = RepositoryInfo.ClassifyAccess(repo, account);
+                repo.ApplySizeMode(ShowAllCommitSizes);
                 repo.PropertyChanged += OnRepositoryPropertyChanged;
                 _allRepositories.Add(repo);
             }
@@ -648,6 +749,12 @@ public sealed class MainWindowViewModel : ObservableObject
         RefreshCommand.RaiseCanExecuteChanged();
     }
 
+    private void ApplyDisplayedSizes()
+    {
+        foreach (var repo in _allRepositories)
+            repo.ApplySizeMode(ShowAllCommitSizes);
+    }
+
     private void ApplyFilter()
     {
         IEnumerable<RepositoryInfo> query = _allRepositories;
@@ -656,15 +763,11 @@ public sealed class MainWindowViewModel : ObservableObject
         if (filter is { IsAll: false, Account: not null })
             query = query.Where(r => r.AccountId == filter.Account.Id);
 
+        query = query.Where(r =>
+            RepositoryInfo.MatchesScope(r.AccessKind, IncludeCollaboratorRepos, IncludeAllAccessibleRepos));
+
         if (!string.IsNullOrWhiteSpace(SearchText))
-        {
-            var needle = SearchText.Trim();
-            query = query.Where(r =>
-                r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
-                r.Owner.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
-                r.Description.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
-                r.Language.Contains(needle, StringComparison.OrdinalIgnoreCase));
-        }
+            query = query.Where(r => r.MatchesSearch(SearchText));
 
         query = VisibilityFilter switch
         {
@@ -821,6 +924,7 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private void ResetAddForm()
     {
+        GitHubSetupStep = 1;
         NewToken = string.Empty;
         NewUsername = string.Empty;
         NewApiUrl = string.Empty;
@@ -861,6 +965,8 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(TotalSizeText));
         OnPropertyChanged(nameof(HasRepositories));
         OnPropertyChanged(nameof(HasNoRepositories));
+        OnPropertyChanged(nameof(EmptyRepositoriesTitle));
+        OnPropertyChanged(nameof(EmptyRepositoriesHint));
         RaiseSelectionStats();
     }
 

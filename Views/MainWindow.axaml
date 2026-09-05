@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GithubMirror.ViewModels"
         x:Class="GithubMirror.Views.MainWindow"
@@ -32,18 +32,33 @@
                 </StackPanel>
 
                 <Border Grid.Column="1" Background="{StaticResource AppSurfaceAlt}" CornerRadius="8"
-                        Padding="10,0" Width="420" Height="36"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid ColumnDefinitions="Auto,*">
+                        Padding="10,0" MinWidth="220" Margin="16,0" Height="36"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                        ToolTip.Tip="搜尋專案名稱、擁有者、語言（Ctrl+F）">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconSearch}" Width="14" Height="14"
                                   Foreground="{StaticResource AppMuted}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Text="{Binding SearchText}" Watermark="搜尋專案名稱、擁有者、語言…"
+                        <TextBox Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}"
+                                 Watermark="搜尋專案名稱、擁有者、語言…"
                                  BorderThickness="0" Background="Transparent" Padding="0"
                                  VerticalAlignment="Center" VerticalContentAlignment="Center" />
+                        <Button Grid.Column="2" Theme="{StaticResource IconButton}" Padding="4"
+                                Command="{Binding ClearSearchCommand}"
+                                IsVisible="{Binding HasSearchText}"
+                                ToolTip.Tip="清除搜尋">
+                            <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11" />
+                        </Button>
                     </Grid>
                 </Border>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Theme="{StaticResource SecondaryButton}" Click="ShowBackup_Click"
+                            ToolTip.Tip="加密備份或還原帳號與應用程式設定至 Google 雲端硬碟">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconCloud}" Width="14" Height="14" />
+                            <TextBlock Text="備份設定檔" />
+                        </StackPanel>
+                    </Button>
                     <Button Theme="{StaticResource SecondaryButton}" Click="ShowTutorial_Click"
                             ToolTip.Tip="重新開啟操作教學">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -81,7 +96,7 @@
         </Border>
 
         <!-- ================= 主要內容 ================= -->
-        <Grid Grid.Row="2" ColumnDefinitions="288,*,348" Margin="12">
+        <Grid Grid.Row="2" x:Name="MainLayoutGrid" ColumnDefinitions="288,*,348" Margin="12">
 
             <!-- 左：帳號 -->
             <Border Grid.Column="0" Classes="card" Padding="12" Margin="0,0,10,0">
@@ -142,10 +157,26 @@
                                     </ComboBox>
                                 </StackPanel>
 
+                                <Border IsVisible="{Binding IsGitHubSetup}" Background="{StaticResource AppAccentSoft}" CornerRadius="8" Padding="10">
+                                    <StackPanel Spacing="8" IsEnabled="{Binding !IsVerifying}">
+                                        <TextBlock Text="GitHub 手把手設定" Classes="label" />
+                                        <TextBlock Text="{Binding GitHubStepTitle}" FontWeight="Bold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding GitHubStepHelp}" Classes="caption" TextWrapping="Wrap" />
+                                        <Button Content="開啟 GitHub Token 頁面 ↗" Command="{Binding OpenTokenPageCommand}"
+                                                Theme="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch" />
+                                        <Grid ColumnDefinitions="*,*">
+                                            <Button Content="上一步" Command="{Binding GitHubBackCommand}" Theme="{StaticResource SecondaryButton}" />
+                                            <Button Grid.Column="1" Content="下一步" Command="{Binding GitHubNextCommand}" Theme="{StaticResource PrimaryButton}" />
+                                        </Grid>
+                                        <Button Content="已有 Token，直接填寫" Command="{Binding GitHubPasteCommand}"
+                                                Theme="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- 2. Token -->
-                                <StackPanel>
+                                <StackPanel IsVisible="{Binding ShowTokenEntry}">
                                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                        <TextBlock Text="2 · Token（貼上後自動辨識平台）" Classes="label"
+                                        <TextBlock Text="Token（必填）" Classes="label"
                                                    Margin="0" VerticalAlignment="Center" />
                                         <Button Grid.Column="1" Theme="{StaticResource IconButton}" Padding="0"
                                                 Command="{Binding ToggleSetupGuideCommand}"
@@ -165,7 +196,7 @@
                                 </StackPanel>
 
                                 <!-- 2-1. 取得 Token 的逐步教學（「?」圖示開關） -->
-                                <Border IsVisible="{Binding IsSetupGuideOpen}" CornerRadius="8" Padding="10"
+                                <Border IsVisible="{Binding ShowGenericSetupGuide}" CornerRadius="8" Padding="10"
                                         Background="{StaticResource AppAccentSoft}">
                                     <StackPanel Spacing="8">
 
@@ -259,6 +290,9 @@
                                     </StackPanel>
                                 </Expander>
 
+                                <TextBlock IsVisible="{Binding IsGitHubSetup}" Classes="caption" TextWrapping="Wrap"
+                                           Text="驗證失敗時：401 請檢查 Token 是否完整或過期；403 請檢查組織政策、SSO 授權與權限。連線成功後仍需確認目標倉庫的寫入權限。" />
+
                                 <!-- 錯誤 -->
                                 <Border IsVisible="{Binding HasAddError}" Background="{StaticResource AppDangerSoft}"
                                         CornerRadius="7" Padding="8">
@@ -271,7 +305,7 @@
                                 </Border>
 
                                 <Button Theme="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch"
-                                        Command="{Binding AddAccountCommand}">
+                                        Command="{Binding AddAccountCommand}" IsVisible="{Binding ShowTokenEntry}">
                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconCheck}" Width="14" Height="14"
                                                   IsVisible="{Binding !IsVerifying}" />
@@ -335,6 +369,27 @@
                     <!-- 工具列 -->
                     <Border DockPanel.Dock="Top" Padding="12,10"
                             BorderBrush="{StaticResource AppBorder}" BorderThickness="0,0,0,1">
+                        <StackPanel Spacing="8">
+                        <Border Background="{StaticResource AppSurfaceAlt}" CornerRadius="8"
+                                Padding="10,0" Height="36"
+                                ToolTip.Tip="搜尋目前清單中的專案（Ctrl+F）">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <PathIcon Grid.Column="0" Data="{StaticResource IconSearch}" Width="14" Height="14"
+                                          Foreground="{StaticResource AppMuted}" Margin="0,0,8,0"
+                                          VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" x:Name="ProjectSearchBox"
+                                         Text="{Binding SearchText, Mode=TwoWay}"
+                                         Watermark="搜尋專案名稱、擁有者、語言…"
+                                         BorderThickness="0" Background="Transparent" Padding="0"
+                                         VerticalAlignment="Center" VerticalContentAlignment="Center" />
+                                <Button Grid.Column="2" Theme="{StaticResource IconButton}" Padding="4"
+                                        Command="{Binding ClearSearchCommand}"
+                                        IsVisible="{Binding HasSearchText}"
+                                        ToolTip.Tip="清除搜尋">
+                                    <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11" />
+                                </Button>
+                            </Grid>
+                        </Border>
                         <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
 
                             <Button Grid.Column="0" Theme="{StaticResource SecondaryButton}" Padding="9,6"
@@ -386,6 +441,20 @@
                                 </Border>
                             </StackPanel>
                         </Grid>
+                        <WrapPanel>
+                            <TextBlock Text="預設只顯示此帳號自己的專案" Classes="caption"
+                                       VerticalAlignment="Center" Margin="0,0,16,4" />
+                            <CheckBox IsChecked="{Binding IncludeCollaboratorRepos}"
+                                      Content="協作的專案" Margin="0,0,16,4"
+                                      ToolTip.Tip="其他使用者把你加進去的專案（擁有者不是此帳號）" />
+                            <CheckBox IsChecked="{Binding IncludeAllAccessibleRepos}"
+                                      Content="所有可能專案" Margin="0,0,16,4"
+                                      ToolTip.Tip="Token 能存取的全部專案，包含組織／群組倉庫" />
+                            <CheckBox IsChecked="{Binding ShowAllCommitSizes}"
+                                      Content="所有提交的大小" Margin="0,0,0,4"
+                                      ToolTip.Tip="預設顯示最近一次提交（目前檔案）的大小。勾選後改為全部 Git 歷史，含已刪除的檔案。GitHub／Gitea／Codeberg 可分開計算；其他平台只有倉庫總大小。" />
+                        </WrapPanel>
+                        </StackPanel>
                     </Border>
 
                     <Grid>
@@ -407,7 +476,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="專案" Width="*" SortMemberPath="Name">
+                                <DataGridTemplateColumn Header="專案" Width="*" MinWidth="220" SortMemberPath="Name">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="4,0">
@@ -426,7 +495,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="來源" Width="150" SortMemberPath="SourcePlatform">
+                                <DataGridTemplateColumn Header="來源" Width="118" MinWidth="118" SortMemberPath="SourcePlatform">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
@@ -442,7 +511,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="大小" Width="110" SortMemberPath="SizeInBytes">
+                                <DataGridTemplateColumn Header="大小" Width="88" MinWidth="88" SortMemberPath="SizeInBytes">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -454,7 +523,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="語言" Width="120" SortMemberPath="Language">
+                                <DataGridTemplateColumn Header="語言" Width="96" MinWidth="96" SortMemberPath="Language">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -466,7 +535,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="星星" Width="86" SortMemberPath="Stars">
+                                <DataGridTemplateColumn Header="星星" Width="58" MinWidth="58" SortMemberPath="Stars">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
@@ -478,7 +547,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="最後更新" Width="150" SortMemberPath="LastUpdated">
+                                <DataGridTemplateColumn Header="最後更新" Width="122" MinWidth="122" SortMemberPath="LastUpdated">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -504,10 +573,10 @@
                                 </Border>
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="三步驟連上 GitHub" Classes="h1" FontSize="20"
+                                    <TextBlock Text="跟著引導連上 GitHub" Classes="h1" FontSize="20"
                                                HorizontalAlignment="Center" />
                                     <TextBlock TextWrapping="Wrap" TextAlignment="Center" Classes="muted"
-                                               Text="GithubMirror 用 GitHub API 讀取你的專案，所以需要一組 Personal Access Token。整段流程大約一分鐘。" />
+                                               Text="GithubMirror 用 GitHub API 讀取你的專案，所以需要一組 Personal Access Token。請跟著左側四步引導完成設定。" />
                                 </StackPanel>
 
                                 <Grid ColumnDefinitions="*,*,*">
@@ -562,6 +631,13 @@
                                             <TextBlock Text="照著步驟連 GitHub" />
                                         </StackPanel>
                                     </Button>
+                                    <Button Theme="{StaticResource SecondaryButton}" Click="ShowBackup_Click"
+                                            ToolTip.Tip="加密備份或從 Google 雲端硬碟還原帳號與設定檔">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconCloud}" Width="14" Height="14" />
+                                            <TextBlock Text="備份設定檔" />
+                                        </StackPanel>
+                                    </Button>
                                     <Button Theme="{StaticResource SecondaryButton}" Click="ShowTutorial_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <TextBlock Text="?" FontWeight="Bold" />
@@ -581,8 +657,19 @@
                             <PathIcon Data="{StaticResource IconFolder}" Width="34" Height="34"
                                       Foreground="{StaticResource AppMuted}" HorizontalAlignment="Center"
                                       IsVisible="{Binding HasAccounts}" />
-                            <TextBlock Text="沒有符合條件的專案" Classes="muted" HorizontalAlignment="Center"
+                            <TextBlock Text="{Binding EmptyRepositoriesTitle}" Classes="muted" HorizontalAlignment="Center"
                                        IsVisible="{Binding HasAccounts}" />
+                            <TextBlock Classes="caption" TextWrapping="Wrap" MaxWidth="360" TextAlignment="Center"
+                                       HorizontalAlignment="Center" IsVisible="{Binding HasAccounts}"
+                                       Text="{Binding EmptyRepositoriesHint}" />
+                            <Button Theme="{StaticResource SecondaryButton}" HorizontalAlignment="Center"
+                                    Command="{Binding ClearSearchCommand}"
+                                    IsVisible="{Binding HasSearchText}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                                    <TextBlock Text="清除搜尋" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </DockPanel>
@@ -679,6 +766,26 @@
                                 </CheckBox>
                             </StackPanel>
 
+                            <Border Classes="card" Padding="10">
+                                <StackPanel Spacing="8">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconCloud}" Width="14" Height="14"
+                                                  Foreground="{StaticResource AppAccent}" />
+                                        <TextBlock Text="設定檔雲端備份" Classes="label" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Classes="caption" TextWrapping="Wrap"
+                                               Text="把帳號 Token、名稱規則、音樂與教學偏好加密上傳到 Google 雲端硬碟。不含 Git 倉庫內容。" />
+                                    <Button Theme="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch"
+                                            Click="ShowBackup_Click"
+                                            ToolTip.Tip="開啟 Google 雲端硬碟備份與還原視窗">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconCloud}" Width="14" Height="14" />
+                                            <TextBlock Text="備份設定檔至 Google 雲端硬碟" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+
                             <Border Classes="card" Background="{StaticResource AppSurfaceAlt}" Padding="10">
                                 <StackPanel Spacing="7">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -692,7 +799,11 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
+                                    <CheckBox x:Name="ContinuePlaybackCheck" IsChecked="True" Content="接續播放"
+                                              IsCheckedChanged="ContinuePlaybackChanged" />
                                     <CheckBox x:Name="AutoPlayMusicCheck" IsChecked="True" Content="鏡像時自動播放" />
+                                    <TextBlock Classes="caption" TextWrapping="Wrap"
+                                               Text="預設接續播放下一首，清單播完會從頭再來。取消勾選則單曲循環。" />
                                     <TextBlock x:Name="MusicStatusText" Text="已待命" Classes="caption"
                                                TextWrapping="Wrap" MaxHeight="34" />
                                     <Grid ColumnDefinitions="*,*">

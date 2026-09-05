@@ -103,6 +103,8 @@ public sealed class AzureReposApiService : IGitService
             WebUrl = Rest.Str(item, "webUrl", Rest.Str(item, "remoteUrl")),
             DefaultBranch = Rest.Str(item, "defaultBranch").Replace("refs/heads/", string.Empty, StringComparison.Ordinal),
             SizeInBytes = Rest.Long(item, "size"),
+            HistorySizeInBytes = Rest.Long(item, "size"),
+            LatestCommitSizeInBytes = Rest.Long(item, "size"),
             IsPrivate = true
         };
     }

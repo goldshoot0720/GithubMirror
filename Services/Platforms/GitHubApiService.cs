@@ -49,8 +49,25 @@ public sealed class GitHubApiService : IGitService
             foreach (var item in items.EnumerateArray()) result.Add(Map(item));
             if (items.GetArrayLength() < 100) break;
         }
+        await GitTreeSize.FillLatestCommitSizesAsync(
+            result,
+            (repo, token) => FetchLatestCommitSizeAsync(credential, repo, token),
+            progress,
+            "正在讀取最近一次提交大小",
+            ct).ConfigureAwait(false);
         progress?.Report($"GitHub 讀取完成，共 {result.Count} 個專案。");
         return result;
+    }
+
+    private async Task<long?> FetchLatestCommitSizeAsync(
+        AccountCredential credential, RepositoryInfo repo, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(repo.Owner) || string.IsNullOrWhiteSpace(repo.Name)) return null;
+        var branch = string.IsNullOrWhiteSpace(repo.DefaultBranch) ? "HEAD" : repo.DefaultBranch;
+        var url =
+            $"{ApiBase(credential)}/repos/{Uri.EscapeDataString(repo.Owner)}/{Uri.EscapeDataString(repo.Name)}/git/trees/{Uri.EscapeDataString(branch)}?recursive=1";
+        return await GitTreeSize.FetchRecursiveTreeSizeAsync(url, request => Rest.UseBearer(request, credential.Token), ct)
+            .ConfigureAwait(false);
     }
 
     public Task<string> BuildSourceUrlAsync(RepositoryInfo repo, AccountCredential credential, CancellationToken ct)
@@ -118,18 +135,23 @@ public sealed class GitHubApiService : IGitService
 
     private static RepositoryInfo Map(JsonElement item)
     {
-        var owner = item.TryGetProperty("owner", out var ownerObject) ? Rest.Str(ownerObject, "login") : string.Empty;
+        var hasOwner = item.TryGetProperty("owner", out var ownerObject);
+        var owner = hasOwner ? Rest.Str(ownerObject, "login") : string.Empty;
+        var ownerType = hasOwner ? Rest.Str(ownerObject, "type") : string.Empty;
         var sizeKb = Rest.Long(item, "size");
+        var history = sizeKb.HasValue ? checked(sizeKb.Value * 1024) : (long?)null;
         return new RepositoryInfo
         {
             Name = Rest.Str(item, "name"),
             Owner = owner,
+            IsOrganizationOwned = RepositoryInfo.OwnerTypeIsOrganization(ownerType),
             NativeId = Rest.Long(item, "id")?.ToString() ?? string.Empty,
             CloneUrl = Rest.Str(item, "clone_url"),
             WebUrl = Rest.Str(item, "html_url"),
             Description = Rest.Str(item, "description"),
             DefaultBranch = Rest.Str(item, "default_branch"),
-            SizeInBytes = sizeKb.HasValue ? checked(sizeKb.Value * 1024) : null,
+            HistorySizeInBytes = history,
+            SizeInBytes = history,
             Stars = Rest.Int(item, "stargazers_count"),
             Forks = Rest.Int(item, "forks_count"),
             IsPrivate = Rest.Bool(item, "private"),

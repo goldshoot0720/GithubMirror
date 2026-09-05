@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GithubMirror.Models;
@@ -88,16 +88,16 @@ public sealed class PlatformDescriptor
                 OrganizationLabel = "建立目標 repo 時放到哪個組織（選填）",
                 OrganizationHint = "留空 = 建在自己帳號下",
                 TokenUrlLabel = "開啟 GitHub Token 頁面",
-                Hint = "需要 repo 權限；要鏡像到組織請再勾選 admin:org。",
+                Hint = "Classic Token 需要 repo；推送 GitHub Actions 工作流程另需 workflow。組織目的地需要建立倉庫權限與必要的 SSO 授權。",
                 SetupSteps = new[]
                 {
                     "登入 github.com，點右上角頭像 → Settings。",
                     "左側選單捲到最底，點 Developer settings。",
                     "選 Personal access tokens → Tokens (classic) → Generate new token (classic)。",
                     "Note 填「GithubMirror」，Expiration 建議選 90 days。",
-                    "Scopes 勾選 repo（整組，含私有專案）；要把目標建在組織底下再加勾 admin:org 的 write:org。",
+                    "Scopes 勾選 repo（整組，含私有專案）；若推送 GitHub Actions 工作流程，再勾選 workflow。",
                     "按最下方 Generate token，複製 ghp_ 開頭的字串（離開頁面就再也看不到）。",
-                    "回到本程式貼進「2 · Token」欄位，按「驗證並加入」即可自動抓出帳號與專案。"
+                    "回到本程式貼進「Token（必填）」欄位，按「驗證並加入」即可自動抓出帳號與專案。"
                 },
                 SetupNote = "改用 Fine-grained token 也可以：Repository access 選 All repositories，"
                     + "Permissions 給 Contents（Read and write）、Administration（Read and write）、Metadata（Read-only）。"

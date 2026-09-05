@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using GithubMirror.Models;
 using GithubMirror.Services;
 using Xunit;
@@ -43,6 +44,33 @@ public sealed class ServiceLayerTests
     [InlineData(1572864L, "1.5 MB")]
     public void Repository_size_is_formatted_from_bytes(long? bytes, string expected) =>
         Assert.Equal(expected, RepositoryInfo.FormatSize(bytes));
+
+    [Fact]
+    public void Displayed_size_prefers_latest_commit_until_history_is_requested()
+    {
+        Assert.Equal(10, RepositoryInfo.DisplayedSize(10, 1200, false));
+        Assert.Equal(1200, RepositoryInfo.DisplayedSize(10, 1200, true));
+        Assert.Equal(1200, RepositoryInfo.DisplayedSize(null, 1200, false));
+        Assert.Null(RepositoryInfo.DisplayedSize(null, null, false));
+    }
+
+    [Fact]
+    public void Git_tree_size_sums_blob_bytes_and_ignores_trees()
+    {
+        using var json = JsonDocument.Parse("""
+            {"sha":"abc","truncated":false,"tree":[
+              {"path":"README.md","type":"blob","size":120},
+              {"path":"src","type":"tree"},
+              {"path":"app.bin","type":"blob","size":4096},
+              {"path":"vendor","type":"commit"}
+            ]}
+            """);
+        Assert.Equal(4216, GitTreeSize.SumBlobBytes(json.RootElement));
+        using var empty = JsonDocument.Parse("""{"tree":[]}""");
+        Assert.Equal(0, GitTreeSize.SumBlobBytes(empty.RootElement));
+        using var missing = JsonDocument.Parse("""{"sha":"abc"}""");
+        Assert.Null(GitTreeSize.SumBlobBytes(missing.RootElement));
+    }
 
     [Fact]
     public void Git_log_mask_removes_password_from_authenticated_urls()

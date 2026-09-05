@@ -1,5 +1,8 @@
+using System;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using GithubMirror.Services;
 
 namespace GithubMirror.Views;
 
@@ -26,7 +29,7 @@ public partial class UserGuideWindow : Window
             "3",
             "挑選要複製的專案",
             "搜尋、篩選，然後勾選一個或多個來源專案",
-            "中間清單可依名稱、擁有者或語言搜尋，也能切換 Public／Private 篩選。勾選專案後，上方會顯示已選數量；可用全選與清除快速調整。",
+            "中間清單預設只顯示此帳號自己的專案（例如 goldshoot0720 只列出 goldshoot0720/…）。可勾選「協作的專案」看被邀請的倉庫，或「所有可能專案」看組織／群組等 Token 能存取的全部。大小欄預設是最近一次提交（目前檔案）；勾選「所有提交的大小」才改為全部 Git 歷史（含已刪檔，例如 1.2 GB 對上 10 MB）。清單上方搜尋列可依名稱、擁有者或語言過濾（Ctrl+F），並可切換 Public／Private。",
             "若剛加入帳號卻看不到專案，請按右上角「重新整理」並檢查 Token 的讀取權限。"),
         new(
             "4",
@@ -38,22 +41,48 @@ public partial class UserGuideWindow : Window
             "5",
             "選擇鏡像背景音樂",
             "鏡像期間可自動播放，也能隨時手動控制",
-            "在右側「鏡像背景音樂」選擇〈最瞎結婚理由〉、〈排列組合的對話〉或〈最瞎結婚理由（版本二）〉。保留「鏡像時自動播放」後，開始鏡像會循環播放、工作結束會停止；複製期間也可切換歌曲，或用播放／暫停按鈕手動控制。",
+            "在右側「鏡像背景音樂」選擇〈最瞎結婚理由〉、〈排列組合的對話〉、〈最瞎結婚理由（版本二）〉、〈鋒兄的傳奇人生〉、〈Departure-(142k)〉或〈水電進化論〉。預設「接續播放」會在播完後接下一首，清單結束再從頭。保留「鏡像時自動播放」後，開始鏡像會播放、工作結束會停止；複製期間也可切換歌曲，或用播放／暫停按鈕手動控制。",
             "按「歌曲來源」可開啟 OpenMusic 原始頁面；音樂載入失敗不會中斷 Git 鏡像。"),
         new(
             "6",
             "開始並檢查結果",
             "按「開始鏡像」，從底部任務區追蹤進度",
             "鏡像進行中可按「停止鏡像」取消。完成後請到目標平台確認預設分支、所有分支與標籤；若失敗，將游標移到任務上查看紀錄，再依訊息修正 Token、保護分支或網路設定。",
-            "push --mirror 會強制同步 refs，可能覆寫或刪除目標端同名 refs。重要目標倉庫請先備份。")
+            "push --mirror 會強制同步 refs，可能覆寫或刪除目標端同名 refs。重要目標倉庫請先備份。"),
+        new(
+            "7",
+            "備份設定檔到 Google 雲端硬碟",
+            "主畫面右上角與右側都有專屬「備份設定檔」按鈕",
+            "按「備份設定檔」或右側「備份設定檔至 Google 雲端硬碟」，可把帳號 Token、鏡像名稱規則、音樂與教學偏好加密上傳到你的 Google 雲端硬碟。換電腦時用同一組 OAuth 設定檔與備份密碼即可還原；不會上傳 Git 倉庫內容。",
+            "首次使用需在 Google Cloud 啟用 Drive API，建立「桌面應用程式」OAuth 用戶端並下載 JSON。備份密碼為四位數字，忘記就無法還原。")
     ];
 
     private int _stepIndex;
+    private readonly bool _initiallyHidden;
 
     public UserGuideWindow()
     {
         InitializeComponent();
+        _initiallyHidden = TutorialPreferences.LoadHidden();
+        DoNotShowAgainCheck.IsChecked = _initiallyHidden;
+        Closing += SavePreferenceOnClosing;
         ShowStep();
+    }
+
+    private void SavePreferenceOnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        var hidden = DoNotShowAgainCheck.IsChecked == true;
+        if (hidden == _initiallyHidden) return;
+        try
+        {
+            TutorialPreferences.SaveHidden(hidden);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            e.Cancel = true;
+            PreferenceErrorText.Text = "無法儲存設定，請重試或還原勾選狀態後關閉。";
+            PreferenceErrorText.IsVisible = true;
+        }
     }
 
     private void Previous_Click(object? sender, RoutedEventArgs e)

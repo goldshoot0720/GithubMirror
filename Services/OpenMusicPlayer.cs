@@ -40,7 +40,22 @@ public sealed partial class OpenMusicPlayer : IDisposable
             "最瞎結婚理由（版本二）",
             "鋒兄鋒兄",
             "https://www.openmusic.ai/tw/song/McGbZAfJzo",
-            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788497715005-16gyu3-a857a9a468b4fa52.mp3")
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788497715005-16gyu3-a857a9a468b4fa52.mp3"),
+        new(
+            "鋒兄的傳奇人生",
+            "黃馨鋒",
+            "https://www.openmusic.ai/tw/song/7QFM8xkYlL",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544353204-35ptvr-400f323e2b57d62e.mp3"),
+        new(
+            "Departure-(142k)",
+            "鋒塗公司",
+            "https://www.openmusic.ai/tw/song/XtBJ3bljeH",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788582575783-zswid0-57bfa665373b36c8.mp3"),
+        new(
+            "水電進化論",
+            "黃馨鋒",
+            "https://www.openmusic.ai/tw/song/JwYHPsrRr7",
+            "https://cdn-media.openmusic.ai/openmusic/ugc/songs/1788544333098-26mgig-b6d582b2c05fdbc0.mp3")
     ];
 
     private static readonly HttpClient HttpClient = new()
@@ -62,6 +77,7 @@ public sealed partial class OpenMusicPlayer : IDisposable
     public MusicPlaybackState State => _state;
     public string? ErrorMessage { get; private set; }
     public bool IsPlaying => State == MusicPlaybackState.Playing;
+    public bool ContinueToNextTrack { get; set; } = true;
     public OpenMusicTrack SelectedTrack { get; private set; } = Tracks[0];
 
     public OpenMusicPlayer() => _resolveAudioUrl = ResolveAudioUrlAsync;
@@ -194,22 +210,57 @@ public sealed partial class OpenMusicPlayer : IDisposable
             return;
         }
 
-        if (_loop && _reader?.CanSeek == true && _output is not null)
+        if (_loop)
         {
-            try
+            if (ContinueToNextTrack)
             {
-                _reader.Position = 0;
-                _output.Play();
+                if (_output is not null) _output.PlaybackStopped -= PlaybackStopped;
+                AdvanceToNextTrack();
+                SetState(MusicPlaybackState.Loading);
+                var version = _playbackVersion;
+                _ = PlayNextAfterStopAsync(version);
                 return;
             }
-            catch (Exception ex)
+
+            if (_reader?.CanSeek == true && _output is not null)
             {
-                SetFailure($"無法重新播放音樂：{ex.Message}");
-                return;
+                try
+                {
+                    _reader.Position = 0;
+                    _output.Play();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    SetFailure($"無法重新播放音樂：{ex.Message}");
+                    return;
+                }
             }
         }
 
         if (_state != MusicPlaybackState.Paused) SetState(MusicPlaybackState.Stopped);
+    }
+
+    internal static OpenMusicTrack TrackAfter(OpenMusicTrack current)
+    {
+        var index = Array.IndexOf(Tracks, current);
+        return Tracks[index < 0 ? 0 : (index + 1) % Tracks.Length];
+    }
+
+    internal void AdvanceToNextTrack() => SelectedTrack = TrackAfter(SelectedTrack);
+
+    private async Task PlayNextAfterStopAsync(int version)
+    {
+        try
+        {
+            await Task.Yield();
+            if (_disposed || version != _playbackVersion) return;
+            await PlayAsync().ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // PlayAsync reports failures; stop/cancel during the hand-off is ignored.
+        }
     }
 
     private void SetFailure(string message)

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using GithubMirror.Services;
@@ -16,6 +17,8 @@ public partial class MainWindow : Window
     private readonly OpenMusicPlayer _musicPlayer = new();
     private bool _ownsAutomaticPlayback;
     private bool _tutorialOpened;
+    private readonly AppPreferenceStore _preferences = new();
+    private bool _preferencesLoaded;
 
     /// <summary>設計工具 / 預覽器用。</summary>
     public MainWindow() : this(AppServices.CreateSample()) { }
@@ -25,23 +28,127 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel(services);
         DataContext = _viewModel;
         InitializeComponent();
+        SizeChanged += (_, _) => ApplyResponsiveLayout();
+        KeyDown += WindowKeyDown;
+        ApplyResponsiveLayout();
         MusicTrackCombo.ItemsSource = OpenMusicPlayer.Tracks;
         MusicTrackCombo.SelectedIndex = 0;
         _viewModel.PropertyChanged += ViewModelPropertyChanged;
         _musicPlayer.StateChanged += MusicPlayerStateChanged;
         Closed += WindowClosed;
         UpdateMusicUi();
+        try
+        {
+            ApplyPreferences(_preferences.Load());
+            _preferencesLoaded = true;
+        }
+        catch (Exception)
+        {
+            _viewModel.StatusMessage = "無法讀取本機設定，已使用預設值。請檢查設定檔與權限。";
+            _viewModel.StatusIsError = true;
+        }
+        Closing += (_, e) =>
+        {
+            if (!_preferencesLoaded) return;
+            try { SavePreferences(); }
+            catch (Exception)
+            {
+                _viewModel.StatusMessage = "本機設定儲存失敗，這次設定變更未保存。";
+                _viewModel.StatusIsError = true;
+            }
+        };
     }
 
     protected override async void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        ApplyResponsiveLayout();
         await _viewModel.InitializeAsync();
         if (!_tutorialOpened)
         {
             _tutorialOpened = true;
-            await ShowTutorialAsync();
+            if (!TutorialPreferences.LoadHidden())
+                await ShowTutorialAsync();
         }
+    }
+
+    private void WindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F || e.KeyModifiers != KeyModifiers.Control) return;
+        ProjectSearchBox.Focus();
+        ProjectSearchBox.SelectAll();
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// 視窗變窄時同步縮小左右側欄，確保中間的「專案」欄永遠有足夠寬度，
+    /// 不會像先前那樣在 1366 寬的螢幕上被擠成 0 而整欄消失。
+    /// </summary>
+    private void ApplyResponsiveLayout()
+    {
+        if (MainLayoutGrid.ColumnDefinitions.Count < 3) return;
+
+        var width = Bounds.Width > 0 ? Bounds.Width : Width;
+
+        var (left, right) = width switch
+        {
+            >= 1600 => (288d, 348d),
+            >= 1400 => (268d, 320d),
+            _       => (244d, 296d)
+        };
+
+        MainLayoutGrid.ColumnDefinitions[0].Width = new GridLength(left);
+        MainLayoutGrid.ColumnDefinitions[2].Width = new GridLength(right);
+    }
+
+    private void ApplyPreferences(AppPreferences preferences)
+    {
+        _viewModel.NameTemplate = preferences.NameTemplate;
+        _viewModel.KeepPrivate = preferences.KeepPrivate;
+        _viewModel.IncludeCollaboratorRepos = preferences.IncludeCollaboratorRepos;
+        _viewModel.IncludeAllAccessibleRepos = preferences.IncludeAllAccessibleRepos;
+        _viewModel.ShowAllCommitSizes = preferences.ShowAllCommitSizes;
+        AutoPlayMusicCheck.IsChecked = preferences.AutoPlayMusic;
+        ContinuePlaybackCheck.IsChecked = preferences.ContinuePlayback;
+        _musicPlayer.ContinueToNextTrack = preferences.ContinuePlayback;
+        var index = Array.FindIndex(OpenMusicPlayer.Tracks, t => t.SourcePageUrl == preferences.MusicSourceUrl);
+        MusicTrackCombo.SelectedIndex = index < 0 ? 0 : index;
+    }
+
+    private void SavePreferences()
+    {
+        var preferences = _preferences.Load();
+        preferences.NameTemplate = _viewModel.NameTemplate;
+        preferences.KeepPrivate = _viewModel.KeepPrivate;
+        preferences.IncludeCollaboratorRepos = _viewModel.IncludeCollaboratorRepos;
+        preferences.IncludeAllAccessibleRepos = _viewModel.IncludeAllAccessibleRepos;
+        preferences.ShowAllCommitSizes = _viewModel.ShowAllCommitSizes;
+        preferences.AutoPlayMusic = AutoPlayMusicCheck.IsChecked == true;
+        preferences.ContinuePlayback = ContinuePlaybackCheck.IsChecked == true;
+        preferences.MusicSourceUrl = _musicPlayer.SelectedTrack.SourcePageUrl;
+        _preferences.Save(preferences);
+    }
+
+    private async void ShowBackup_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsMirroring || _viewModel.IsLoading || _viewModel.IsVerifying)
+        {
+            _viewModel.StatusMessage = "請等待載入、帳號驗證或鏡像工作結束，再開啟設定檔備份。";
+            return;
+        }
+        var window = new BackupWindow(
+            () => _viewModel.CreateBackup(_preferences.Load().HideTutorial,
+                AutoPlayMusicCheck.IsChecked == true, ContinuePlaybackCheck.IsChecked == true,
+                _musicPlayer.SelectedTrack.SourcePageUrl),
+            async data =>
+            {
+                await _viewModel.RestoreBackupAsync(data, _preferences);
+                _musicPlayer.Stop();
+                _ownsAutomaticPlayback = false;
+                ApplyPreferences(_preferences.Load());
+                _preferencesLoaded = true;
+            });
+        await window.ShowDialog(this);
     }
 
     private async void ShowTutorial_Click(object? sender, RoutedEventArgs e) => await ShowTutorialAsync();
@@ -67,12 +174,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ContinuePlaybackChanged(object? sender, RoutedEventArgs e)
+    {
+        _musicPlayer.ContinueToNextTrack = ContinuePlaybackCheck.IsChecked == true;
+    }
+
     private async void MusicTrackChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (MusicTrackCombo.SelectedIndex < 0 || MusicTrackCombo.SelectedIndex >= OpenMusicPlayer.Tracks.Length) return;
 
+        var selected = OpenMusicPlayer.Tracks[MusicTrackCombo.SelectedIndex];
+        if (_musicPlayer.SelectedTrack == selected) return;
         var resume = _musicPlayer.IsPlaying;
-        _musicPlayer.SelectTrack(OpenMusicPlayer.Tracks[MusicTrackCombo.SelectedIndex]);
+        _musicPlayer.SelectTrack(selected);
         if (resume) await _musicPlayer.PlayAsync();
     }
 
@@ -108,9 +222,15 @@ public partial class MainWindow : Window
             MusicPlaybackState.Loading => "載入中…",
             _ => "▶ 播放"
         };
+        var trackIndex = Array.IndexOf(OpenMusicPlayer.Tracks, _musicPlayer.SelectedTrack);
+        if (trackIndex >= 0 && MusicTrackCombo.SelectedIndex != trackIndex)
+            MusicTrackCombo.SelectedIndex = trackIndex;
+
         MusicStatusText.Text = _musicPlayer.State switch
         {
-            MusicPlaybackState.Playing => $"播放中 · {_musicPlayer.SelectedTrack.Title}",
+            MusicPlaybackState.Playing => _musicPlayer.ContinueToNextTrack
+                ? $"接續播放中 · {_musicPlayer.SelectedTrack.Title}"
+                : $"單曲循環 · {_musicPlayer.SelectedTrack.Title}",
             MusicPlaybackState.Paused => "已暫停",
             MusicPlaybackState.Loading => "正在從 OpenMusic 載入…",
             MusicPlaybackState.Failed => _musicPlayer.ErrorMessage ?? "播放失敗",

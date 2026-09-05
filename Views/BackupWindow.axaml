@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GithubMirror.Views.BackupWindow"
+        Title="備份設定檔至 Google 雲端硬碟" Width="720" Height="760"
+        MinWidth="620" MinHeight="620" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource AppBg}">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24">
+
+        <!-- 標題與提醒固定在最上方，捲動時不會被切掉 -->
+        <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,14">
+            <TextBlock Text="備份設定檔至 Google 雲端硬碟" Classes="h1" />
+            <TextBlock Text="只備份帳號 Token 與應用程式設定，不包含 Git 倉庫內容。上傳前會用備份密碼加密；忘記密碼就無法還原，請另行妥善保存。"
+                       TextWrapping="Wrap" Classes="muted" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel x:Name="ActionsPanel" Spacing="14">
+                <Border Classes="card" Padding="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="1 · 連接 Google Drive" FontWeight="Bold" />
+                        <TextBlock Text="首次使用：在 Google Cloud 啟用 Google Drive API、設定 OAuth 同意畫面（測試模式需加入你的 Google 帳號），建立「桌面應用程式」OAuth 用戶端並下載 JSON。另一台電腦請使用同一組 OAuth 設定檔與 Google 帳號。"
+                                   TextWrapping="Wrap" Classes="muted" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="開啟 Google Cloud" Click="OpenCloud_Click" />
+                            <Button Content="選擇 OAuth JSON 並登入" Click="SignIn_Click" />
+                        </StackPanel>
+                        <TextBlock x:Name="ConnectionText" Text="尚未登入。授權只在此視窗保留，過期或關閉後需重新登入。" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="card" Padding="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="2 · 加密並上傳設定檔" FontWeight="Bold" />
+                        <TextBox x:Name="BackupPassword" PasswordChar="●" MaxLength="4" Watermark="新備份密碼（四位數字）" />
+                        <TextBox x:Name="ConfirmPassword" PasswordChar="●" MaxLength="4" Watermark="再次輸入四位數字密碼" />
+                        <Button x:Name="UploadButton" Content="加密並上傳設定檔至 Google 雲端硬碟" Click="Upload_Click" IsEnabled="False" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="card" Padding="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="3 · 還原設定檔" FontWeight="Bold" />
+                        <TextBlock Text="只列出此 OAuth 應用程式建立的設定檔備份；選取後先解密預覽，再確認取代目前所有帳號與設定。" TextWrapping="Wrap" Classes="muted" />
+                        <Button x:Name="RefreshButton" Content="重新整理備份清單" Click="Refresh_Click" IsEnabled="False" />
+                        <ComboBox x:Name="BackupFiles" HorizontalAlignment="Stretch" SelectionChanged="BackupSelectionChanged" />
+                        <TextBox x:Name="RestorePassword" PasswordChar="●" MaxLength="4" Watermark="此備份建立時使用的四位數字密碼" />
+                        <Button x:Name="PreviewButton" Content="下載並解密預覽" Click="Preview_Click" IsEnabled="False" />
+                        <Border x:Name="PreviewPanel" IsVisible="False" Background="{StaticResource AppAccentSoft}" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="10">
+                                <TextBlock x:Name="PreviewText" TextWrapping="Wrap" />
+                                <Button Content="確認取代本機帳號與設定" Click="Restore_Click" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,14,0,0">
+            <ProgressBar x:Name="BusyProgress" IsIndeterminate="True" IsVisible="False" Height="4" />
+            <Border x:Name="StatusBox" Background="{StaticResource AppSurfaceAlt}" CornerRadius="8" Padding="12,10">
+                <TextBlock x:Name="StatusText" Text="請先登入 Google 帳號。" TextWrapping="Wrap" />
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button x:Name="CancelButton" Content="取消目前操作" Click="Cancel_Click" IsVisible="False" />
+                <Button Content="關閉" Click="Close_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

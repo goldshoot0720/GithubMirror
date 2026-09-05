@@ -112,6 +112,8 @@ public sealed class BitbucketApiService : IGitService
         Description = Rest.Str(item, "description"),
         DefaultBranch = item.TryGetProperty("mainbranch", out var branch) ? Rest.Str(branch, "name") : string.Empty,
         SizeInBytes = Rest.Long(item, "size"),
+        HistorySizeInBytes = Rest.Long(item, "size"),
+        LatestCommitSizeInBytes = Rest.Long(item, "size"),
         IsPrivate = Rest.Bool(item, "is_private"),
         LastUpdated = Rest.Date(item, "updated_on"),
         Language = Rest.Str(item, "language")
